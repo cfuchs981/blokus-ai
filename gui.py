@@ -1,3 +1,13 @@
+'''
+Written for CS 480 - Artificial Intelligence
+The following sources were used in developing this code.
+
+https://lorenzod8n.wordpress.com/2007/05/27/pygame-tutorial-2-drawing-lines/
+https://realpython.com/pygame-a-primer/
+https://sites.cs.ucsb.edu/~pconrad/cs5nm/topics/pygame/drawing/
+
+'''
+
 # Import the pygame module
 import pygame
 
@@ -11,7 +21,6 @@ from pygame.locals import (
     KEYDOWN,
     QUIT,
 )
-
 
 # Define constants for the screen width and height
 SCREEN_WIDTH = 840
