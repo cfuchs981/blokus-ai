@@ -6,6 +6,7 @@ import math
 import random
 import copy
 import piece
+from gui import *
 
 # Blokus Board
 class Board:
@@ -66,15 +67,18 @@ class Board:
 
         return True in corners;
 
+    
     # Print the current board layout
     # TODO(UI) we don't want this. This is lazy testing UI, route it into
     # something better & with colors. 
+    
     def print_board(self):
         print("Current Board Layout:");
         for row in range(len(self.state)):
             for col in range(len(self.state[0])):
                 print(" "+ str(self.state[row][col]), end = '')
             print()
+    
 
 # Player Class
 class Player:
@@ -265,8 +269,9 @@ def play_blokus(blokus):
     blokus.play();
     
     while blokus.winner() is None:
-        blokus.play();
-        blokus.board.print_board();
+        blokus.play()
+        render(blokus.board.state)
+        #blokus.board.print_board();
         for player in blokus.players:
             print("Player "+ str(player.id) + " score "+ str(player.score) + ": "
                   + str([sh.id for sh in player.pieces]));
@@ -299,7 +304,8 @@ def multi_run(repeat, one, two):
         play_blokus(blokus);
 
         # End of game display.
-        blokus.board.print_board();
+        render(blokus.board.state)
+        #blokus.board.print_board();
         blokus.play();
         plist = sorted(blokus.players, key = lambda p: p.id);
         for player in plist:
