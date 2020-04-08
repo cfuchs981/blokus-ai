@@ -13,12 +13,10 @@ class Board:
     def __init__(self, nrow, ncol):
         self.nrow = nrow; # total rows
         self.ncol = ncol; # total columns
-        # Fill out placeholder board with _. TODO(UI) we
-        # won't need this board after your stuff works.
+
         self.state = [['_'] * ncol for i in range(nrow)];
 
-    # Places piece on board for a coordinate. TODO(UI) may not be
-    # needed, we may be able to update our UI directly. 
+
     def update(self, player_id, placement):
         for row in range(self.nrow):
             for col in range(self.ncol):
@@ -68,6 +66,7 @@ class Board:
         return True in corners;
 
     
+    '''
     # Print the current board layout
     # TODO(UI) we don't want this. This is lazy testing UI, route it into
     # something better & with colors. 
@@ -78,6 +77,7 @@ class Board:
             for col in range(len(self.state[0])):
                 print(" "+ str(self.state[row][col]), end = '')
             print()
+    '''
     
 
 # Player Class
