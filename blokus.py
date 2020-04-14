@@ -280,19 +280,20 @@ class Blokus:
         newboard = copy.deepcopy(state)
 
         current = newboard.to_move; # get current player
-        proposal = move; # get the next move based on
-                                            # the player's strategy
 
         # update the board and the player status
-        newboard._board.update(current.id, proposal.points);
-        current.update_player(proposal, newboard._board);
-        current.remove_piece(proposal); # remove used piece
+        newboard._board.update(current.id, move.points);
+        current.update_player(move, newboard._board);
+        current.remove_piece(move); # remove used piece
         # put the current player to the back of the queue
         # this may result in some references to copies?
         first = newboard.game.players.pop(0);
         newboard.game.players += [first];
         newboard.game.rounds += 1; # update game round
-        newboard._moves = newboard.game.players[0].possible_moves(newboard.game.players[0].pieces, newboard.game)
+        # MARKER @ this is the holdup!
+        # we probably do need to updtae the opponent's info bc we'll need to look at their pieces...wait...
+        # can our blocking strategy work without having to access their moves?
+        # newboard._moves = newboard.game.players[0].possible_moves(newboard.game.players[0].pieces, newboard.game)
         return newboard
     
     def to_move(self, state):
@@ -301,8 +302,7 @@ class Blokus:
 
     def successors(self, state):
         "Return a list of legal (move, state) pairs."
-        # legal_moves ain't the problem
-        moves_that_are_legal = self.legal_moves(state)
+        moves_that_are_legal = state.game.players[0].possible_moves(state.game.players[0].pieces, state.game)
         print("there are ", len(moves_that_are_legal), " legal moves")
         # sort by size desc
         keyfun= operator.attrgetter("size") # this use operative since it's faster than lambda
@@ -317,7 +317,7 @@ class Blokus:
         # cutoff shouldn't be an issue bc this should only list direct successors. is that too many?
         m = [(move, self.make_move(move, state))
                 for move in first_twelve_or_less]
-        # this IS reached after generating 58 successors!
+        # this IS reached after generating 58 successors
         #print(m)
 
         # MARKER let's try some stuff
@@ -329,13 +329,10 @@ class Blokus:
             test2 += (str(i[0].size) + " ")
         print(test2)
         return m[:1]
-    
-    def legal_moves(self, boardstate):
-        return boardstate.legal_moves()
 
     def terminal_test(self, state):
         "Return True if this is a final state for the game."
-        return not self.legal_moves(state)
+        return not state.game.players[0].possible_moves(state.game.players[0].pieces, state.game)
 
     # gets called in ab on new states
     # interesetingly enough, this also currently represents base score
@@ -498,21 +495,6 @@ class BoardState:
         # current player should be known as game.players[0]
         self.to_move = game.players[0]
         self._board = game.board
-        self._moves = game.players[0].possible_moves(game.players[0].pieces, game)
-
-    def getPlayer(self):
-        return self.to_move
-
-    def legal_p(self, move):
-        "A legal move must involve a position with pieces."
-        if self._board[move] > 0:
-            return True
-        else:
-            return None
-
-    def legal_moves(self):
-        "Return a list of legal moves for player."
-        return self._moves
 
 '''
 TODO(AI): tyler
