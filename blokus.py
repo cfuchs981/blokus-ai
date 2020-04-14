@@ -1,12 +1,30 @@
 # Some functions are modified from the source listed in piece.py
 # (the functions that handle the Piece objects).
 
+from utils import *
 import sys
 import math
 import random
 import copy
 import piece
 from gui import *
+import copy
+
+# necessary?
+count = 0
+testing = 0
+BigInitialValue = 1000000
+P1 = 1
+P2 = 2
+TotalStartingSize = 89
+
+def opponent(player):
+    if player == 1:
+        return 2
+    elif player == 2:
+        return 1
+    else:
+        print("Oooooooooooooooops")
 
 # Blokus Board
 class Board:
@@ -127,6 +145,7 @@ class Player:
 
         # Check every available corners
         for cr in self.corners:
+            # MARKER
             # Check every available pieces
             for sh in pieces:
                 # Check every reference point the piece could have.
@@ -168,6 +187,7 @@ class Blokus:
     def winner(self):
         # get all possible moves for all players
         moves = [p.possible_moves(p.pieces, self) for p in self.players];
+        # print("Winner has found ", moves)
 
         # check how many rounds the total available moves from all players
         # are the same and increment the counter if so
@@ -244,6 +264,135 @@ class Blokus:
             else: # if the game results in a tie
                 print('Game over! Tied between players: '+ ', '.join(map(str, winner)));
 
+    def make_move(self, move, state):
+        "Return a new BoardState reflecting move made from given board state."
+        # we don't want to adjust the prime BoardState copy here, but we need to update board, game, and player info
+
+        # SOLUTION: copy everything again into a newboard that starts off as a copy but gets updated with post-move new state stats
+
+        # need to update board with move, whose turn it is, and current player's new stats
+
+        # somewhere, create a new BoardState and update it before returning
+        # set player to opponent
+
+        # current = self.to_move(state); # get current player id?
+
+        # # copy current boardstate and operate on copy?
+        # # newboard = copy.deepcopy(state)
+
+        # newboard = BoardState(opponent(self.to_move(state)), None, self.board, None)
+
+        # # update the board and the player status
+        # newboard.board.update(current.id, move.points);
+
+
+        # at this point, at least one move has been made, winner is known to be None, and a vaild move has been passed in
+
+        # boardstate = BoardState(game_copy, p1_copy, p2_copy, game.calculate_utility())
+
+        # TODO fix this shish. copy/copies?
+        newboard = copy.deepcopy(state)
+
+        current = newboard.to_move; # get current player
+        proposal = move; # get the next move based on
+                                            # the player's strategy
+
+        # update the board and the player status
+        newboard._board.update(current.id, proposal.points);
+        current.update_player(proposal, newboard._board);
+        current.remove_piece(proposal); # remove used piece
+        # put the current player to the back of the queue
+        # this may result in some references to copies?
+        first = newboard.game.players.pop(0);
+        newboard.game.players += [first];
+        newboard.game.rounds += 1; # update game round
+        newboard._moves = newboard.game.players[0].possible_moves(newboard.game.players[0].pieces, newboard.game)
+        return newboard
+
+        # Note where the opponent's mancala is located
+        # if self.to_move == P1:
+        #     oppMancala = P0Mancala
+        # else:
+        #     oppMancala = P1Mancala
+        # if move != None:
+        #     # the number of pieces to be distributed around the board
+        #     pieceCount = newboard._board[move]
+        #     # set the move position's piece count to 0
+        #     newboard._board[move] = 0
+
+        #     # figure out the first bin that gets a piece distributed to it
+        #     position = (move + 1) % 14
+        #     # keep distributing pieces until you run out
+        #     while pieceCount > 0:
+        #         # don't distribute a piece to the opponent's mancala
+        #         if position != oppMancala:
+        #             newboard._board[position] += 1
+        #             pieceCount -= 1
+        #         position = (position + 1) % 14
+
+        #     # if last move is into a previously empty bin owned by mover, then capture
+        #     # the opponent's pieces from the opposite bin
+        #     lastMove = (position - 1) % 14
+        #     inRange = False
+        #     if self.to_move == P0:
+        #         if lastMove in range(P0Start, P0Mancala):
+        #             inRange = True
+        #     else:
+        #         if lastMove in range(P1Start, P1Mancala):
+        #             inRange = True
+        #     if (newboard._board[lastMove] == 1) and inRange:
+        #         # Magically, in our representation the "opposite" bin is always in the
+        #         # array position 12 - Bin.
+        #         oppBin = 12 - lastMove
+        #         oppCount = newboard._board[oppBin]
+        #         newboard._board[oppBin] = 0
+        #         # print "!!! captured ", oppCount, " pieces from bin: ", oppBin
+        #         if self.to_move == P0:
+        #             newboard._board[P0Mancala] += oppCount
+        #         else:
+        #             newboard._board[P1Mancala] += oppCount
+
+        #     # if last move is into the player's own Mancala, then they get another turn
+        #     #  Note that this is kind of weird from a Minimax search perspective.
+        #     if (self.to_move == P0) and (lastMove == P0Mancala):
+        #         newboard.to_move = self.to_move
+        #     elif (self.to_move == P1) and (lastMove == P1Mancala):
+        #         newboard.to_move = self.to_move
+            
+        # newboard._moves = newboard.calculate_legal_moves()
+        # return newboard
+    
+    def to_move(self, state):
+        "Return the player whose move it is in this state."
+        return state.to_move
+
+    def successors(self, state):
+        "Return a list of legal (move, state) pairs."
+        m = [(move, self.make_move(move, state))
+                for move in self.legal_moves(state)]
+        return m
+    
+    def legal_moves(self, boardstate):
+        return boardstate.legal_moves()
+
+    def terminal_test(self, state):
+        "Return True if this is a final state for the game."
+        return not self.legal_moves(state)
+
+    # gets called in ab on new states
+    def calculate_utility(self):
+        current = self.players[0]
+        sum = 0
+        # count the number of squares in all remaining pieces
+        for p in current.pieces:
+            sum += p.size
+        # small sum => high utility
+        return TotalStartingSize - sum
+
+    def utility(self, boardstate, player):
+        "This is where your utility function gets called."
+        return self.calculate_utility()
+
 # Random Strategy: choose an available piece randomly
 def Random_Player(player, game):
     options = [p for p in player.pieces];
@@ -255,6 +404,183 @@ def Random_Player(player, game):
         else: # no possible move for that piece
             options.remove(piece); # remove it from the options
     return None; # no possible move left
+
+# should resemble MyPlayer and use fxns from ai_helper, may need to adjust params. seems like a new obj will need to be created just for each special state
+def AI_Player(player, game):
+    opponent = None
+    for p in game.players:
+        if player.id != p.id:
+            opponent = p
+    p1_copy = copy.deepcopy(opponent)
+    p2_copy = copy.deepcopy(player)
+    game_copy = copy.deepcopy(game)
+    # wait, should we do this or just pass in a copy of game?
+    
+    # ASSUME THAT WE ARE HARD-CODING AI AS P2
+    # let's say AI is always P2 (so P2 in code)
+    # our player.id should be 2
+
+    # basic heuristic: incentivize playing largest remaining piece on each move
+    # gets called in ab on new states
+    # def calculate_utility(self, boardstate):
+    #     current = self.players[0]
+    #     sum = 0
+    #     # count the number of squares in all remaining pieces
+    #     for p in current.pieces:
+    #         sum += p.size
+    #     # small sum => high utility
+    #     return TotalStartingSize - sum
+
+    # player.id is an int
+    # calculate_utility returns an int (0, 89)
+    # game.state.board returns the board array thing
+    # possible_moves is an array of Piece objs that represent moves
+
+    #every time it's my turn, transform current info into appropriate state and game to be used only within ab search:
+    # old: boardstate = BoardState(player.id, calculate_utility(player, game), game.state.board, player.possible_moves(player.pieces, game))
+    boardstate = BoardState(game_copy, p1_copy, p2_copy, game.calculate_utility())
+
+    # def __init__(self, game=None, p1=None, p2=None, utility=None):
+
+    # state
+    # to_move is the player whose turn it is in this state
+    # utility is the eval_function, calculate_utility in AcostaPlayer (heuristic val for each state)
+    # board may already be accounted for with game.state.board
+    # moves is usually assigned with the val of calculate_legal_moves in BoardState
+    # only state.to_move is called, but state is passed as a param to a lot of things, which access the following attributes like so:
+    # player = game.to_move(state)
+    # eval_fn(state)? 
+    # succ = game.successors(state)
+    # cutoff_test(state, depth)
+    # if state.to_move == s.to_move:
+    # (lambda state,depth: depth>d or game.terminal_test(state))
+    # eval_fn or (lambda state: game.utility(state, game.current_player)
+
+    # game (note: this is a Blokus obj, new methods should go there maybe)
+    # methods used in alphabeta_search:
+    # to_move
+    # successors(state)
+    # terminal_test(state)
+    # utility(state, game.current_player)
+
+    #this is called to do the following for every move:
+    #perform alphabeta search and return the output, which should be in the form of a Piece with move info
+    return alphabeta_search(boardstate, game_copy, 4, None, None)
+    #note: other code already takes care of making the actual move ingame
+
+    # things we have access to:
+    # player's remaining pieces
+    # game.board.state gives phat array
+    # possible moves (below?)
+    # what is being returned? It's a Piece with loc/permuation info attached
+
+def alphabeta_search(state, game, d=4, cutoff_test=None, eval_fn=None):
+    """Search game to determine best action; use alpha-beta pruning.
+    This version cuts off search and uses an evaluation function."""
+    global count
+    global testing
+    global BigInitialValue
+    
+    player = game.to_move(state)
+    count = 0    
+
+    def max_value(state, alpha, beta, depth):
+        global count, testing
+        if testing:
+            print("  "* depth, "Max  alpha: ", alpha, " beta: ", beta, " depth: ", depth)
+        if cutoff_test(state, depth):
+            if testing:
+                print("  "* depth, "Max cutoff returning ", eval_fn(state))
+            return eval_fn(state)
+        v = -BigInitialValue
+        succ = game.successors(state)
+        count = count + len(succ)
+        if testing:
+            print("  "*depth, "maxDepth: ", depth, "Total:", count, "Successors: ", len(game.successors(state)))
+        for (a, s) in succ:
+            # Decide whether to call max_value or min_value, depending on whose move it is next.
+            # Some games, such as Mancala, sometimes allow the same player to make multiple moves.
+            if state.to_move == s.to_move:
+                v = max(v, max_value(s, alpha, beta, depth+1))
+            else:
+                v = max(v, min_value(s, alpha, beta, depth+1))
+            if testing:
+                print("  "* depth, "max best value:", v)
+            if v >= beta:
+                return v
+            alpha = max(alpha, v)
+        return v
+
+    def min_value(state, alpha, beta, depth):
+        global count
+        if testing:
+            print("  "*depth, "Min  alpha: ", alpha, " beta: ", beta, " depth: ", depth)
+        if cutoff_test(state, depth):
+            if testing:
+                print("  "*depth, "Min cutoff returning ", eval_fn(state))
+            return eval_fn(state)
+        v = BigInitialValue
+        succ = game.successors(state)
+        count = count + len(succ)
+        if testing:
+            print("  "*depth, "minDepth: ", depth, "Total:", count, "Successors: ", len(game.successors(state)))
+        for (a, s) in succ:
+            # Decide whether to call max_value or min_value, depending on whose move it is next.
+            # Some games, such as Mancala, sometimes allow the same player to make multiple moves.
+            if state.to_move == s.to_move:
+                v = min(v, min_value(s, alpha, beta, depth+1))
+            else:
+                v = min(v, max_value(s, alpha, beta, depth+1))
+            if testing:
+                print("  "*depth, "min best value:", v)
+            if v <= alpha:
+                return v
+            beta = min(beta, v)
+        return v
+
+    def right_value(s, alpha, beta, depth):
+        if s.to_move == state.to_move:
+            return max_value(s, -BigInitialValue, BigInitialValue, 0)
+        else:
+            return min_value(s, -BigInitialValue, BigInitialValue, 0)
+
+    # Body of alphabeta_search starts here:
+    # The default test cuts off at depth d or at a terminal state
+    cutoff_test = (cutoff_test or
+                   (lambda state,depth: depth>d or game.terminal_test(state)))
+    eval_fn = eval_fn or (lambda state: game.utility(state, player.id))
+    # MARKER things should work up to here
+    action, state = argmax(game.successors(state),
+                           # lambda ((a, s)): right_value(s, -BigInitialValue, BigInitialValue, 0))
+                            lambda a_s: right_value(a_s[1], -BigInitialValue, BigInitialValue, 0))
+    print("Final count: ", count)
+    return action
+
+class BoardState:
+    """Holds one state of the Mancala board."""
+    def __init__(self, game=None, p1=None, p2=None, utility=None):
+        self.game = game
+        self.p1 = p1
+        self.p2 = p2
+        # current player should be known as game.players[0]
+        self.to_move = game.players[0]
+        self._utility =  utility
+        self._board = game.board
+        self._moves = game.players[0].possible_moves(game.players[0].pieces, game)
+
+    def getPlayer(self):
+        return self.to_move
+
+    def legal_p(self, move):
+        "A legal move must involve a position with pieces."
+        if self._board[move] > 0:
+            return True
+        else:
+            return None
+
+    def legal_moves(self):
+        "Return a list of legal moves for player."
+        return self._moves
 
 '''
 TODO(AI): tyler
@@ -313,7 +639,8 @@ def multi_run(repeat, one, two):
         print("Game end.");
 
 def main():
-    multi_run(1, Random_Player, Random_Player);
+    # multi_run(1, Random_Player, Random_Player);
+    multi_run(1, Random_Player, AI_Player);
     # TODO(blokusUI) You need to change this a lot. The player needs to have
     # some sort of while loop here controlling their play. I'd
     # recommend printing out their available pieces, their available corners
