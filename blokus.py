@@ -2,6 +2,7 @@
 # (the functions that handle the Piece objects).
 
 from utils import *
+# import operator
 import sys
 import math
 import random
@@ -9,10 +10,11 @@ import copy
 import piece
 from gui import *
 import copy
+import operator
 
 # necessary?
 count = 0
-testing = 0
+testing = 1
 BigInitialValue = 1000000
 P1 = 1
 P2 = 2
@@ -145,7 +147,6 @@ class Player:
 
         # Check every available corners
         for cr in self.corners:
-            # MARKER
             # Check every available pieces
             for sh in pieces:
                 # Check every reference point the piece could have.
@@ -237,12 +238,14 @@ class Blokus:
             for i in range(len(self.players)):
                 self.players[i].add_pieces(list(self.all_pieces));
                 self.players[i].start_corner(starts[i]);
-
+        # play works for p1, p2 winner is checked (complex?!)
         winner = self.winner(); # get game status
         if winner is None: # no winner, the game continues
             current = self.players[0]; # get current player
+            # MARKER next_move is where we get loopy
             proposal = current.next_move(self); # get the next move based on
                                                 # the player's strategy
+            print(proposal)
 
             if proposal is not None: # if there a possible proposed move
                 # check if the move is valid
@@ -298,9 +301,34 @@ class Blokus:
 
     def successors(self, state):
         "Return a list of legal (move, state) pairs."
+        # legal_moves ain't the problem
+        moves_that_are_legal = self.legal_moves(state)
+        print("there are ", len(moves_that_are_legal), " legal moves")
+        # sort by size desc
+        keyfun= operator.attrgetter("size") # this use operative since it's faster than lambda
+        moves_that_are_legal.sort(key=keyfun, reverse=True) # sort is in-place
+        first_twelve_or_less = moves_that_are_legal[:12]
+        print("we're only gonna try making ", len(first_twelve_or_less), " of them")
+        print("they have the following sizes:")
+        test = ""
+        for i in first_twelve_or_less:
+            test += (str(i.size) + " ")
+        print(test)
+        # cutoff shouldn't be an issue bc this should only list direct successors. is that too many?
         m = [(move, self.make_move(move, state))
-                for move in self.legal_moves(state)]
-        return m
+                for move in first_twelve_or_less]
+        # this IS reached after generating 58 successors!
+        #print(m)
+
+        # MARKER let's try some stuff
+        # sort the list
+        # m.sort(key=lambda x: x[0].size, reverse=True)
+        print("we're returning ", len(m[:12]), " elements:")
+        test2 = ""
+        for i in m[:12]:
+            test2 += (str(i[0].size) + " ")
+        print(test2)
+        return m[:1]
     
     def legal_moves(self, boardstate):
         return boardstate.legal_moves()
@@ -310,8 +338,9 @@ class Blokus:
         return not self.legal_moves(state)
 
     # gets called in ab on new states
-    def calculate_utility(self):
-        current = self.players[0]
+    # interesetingly enough, this also currently represents base score
+    def calculate_utility(self, boardstate):
+        current = boardstate.to_move
         sum = 0
         # count the number of squares in all remaining pieces
         for p in current.pieces:
@@ -319,9 +348,9 @@ class Blokus:
         # small sum => high utility
         return TotalStartingSize - sum
 
-    def utility(self, boardstate, player):
+    def utility(self, boardstate):
         "This is where your utility function gets called."
-        return self.calculate_utility()
+        return self.calculate_utility(boardstate)
 
 # Random Strategy: choose an available piece randomly
 def Random_Player(player, game):
@@ -337,6 +366,11 @@ def Random_Player(player, game):
 
 # should resemble MyPlayer and use fxns from ai_helper, may need to adjust params. seems like a new obj will need to be created just for each special state
 def AI_Player(player, game):
+    # if no possible moves in this state, return None
+    if len(player.possible_moves(player.pieces, game)) <= 0:
+        print("WE'RE OUTTA MOVES")
+        return None; # no possible move left
+
     opponent = None
     for p in game.players:
         if player.id != p.id:
@@ -353,14 +387,22 @@ def AI_Player(player, game):
 
     #every time it's my turn, transform current info into appropriate state and game to be used only within ab search:
     # old: boardstate = BoardState(player.id, calculate_utility(player, game), game.state.board, player.possible_moves(player.pieces, game))
-    boardstate = BoardState(game_copy, p1_copy, p2_copy, game.calculate_utility())
+    boardstate = BoardState(game_copy, p1_copy, p2_copy, TotalStartingSize)
 
     #this is called to do the following for every move:
     #perform alphabeta search and return the output, which should be in the form of a Piece with move info
-    return alphabeta_search(boardstate, game_copy, 4, None, None)
+    # MARKER something in here is getting hung up
+    # changing the depth to 1 is not sufficient
+    # I don't think we can make make_move any more efficient
+    # lets try limiting the number of possible moves that are considered
+    return alphabeta_search(boardstate, game_copy, 1, None, None)
+    # return p2_copy.possible_moves(p2_copy.pieces, game_copy)[0]
+    # if you return a single move, it works
+    print("IT SHOULD'VE WORKED")
     #note: other code already takes care of making the actual move ingame
+    # the above could be TESTED with a default move?
 
-def alphabeta_search(state, game, d=4, cutoff_test=None, eval_fn=None):
+def alphabeta_search(state, game, d=1, cutoff_test=None, eval_fn=None):
     """Search game to determine best action; use alpha-beta pruning.
     This version cuts off search and uses an evaluation function."""
     global count
@@ -368,7 +410,8 @@ def alphabeta_search(state, game, d=4, cutoff_test=None, eval_fn=None):
     global BigInitialValue
     
     player = game.to_move(state)
-    count = 0    
+    count = 0
+    # we make it here, only once
 
     def max_value(state, alpha, beta, depth):
         global count, testing
@@ -382,7 +425,7 @@ def alphabeta_search(state, game, d=4, cutoff_test=None, eval_fn=None):
         succ = game.successors(state)
         count = count + len(succ)
         if testing:
-            print("  "*depth, "maxDepth: ", depth, "Total:", count, "Successors: ", len(game.successors(state)))
+            print("  "*depth, "maxDepth: ", depth, "Total:", count, "Successors: ", len(succ))
         for (a, s) in succ:
             # Decide whether to call max_value or min_value, depending on whose move it is next.
             # Some games, such as Mancala, sometimes allow the same player to make multiple moves.
@@ -409,8 +452,11 @@ def alphabeta_search(state, game, d=4, cutoff_test=None, eval_fn=None):
         succ = game.successors(state)
         count = count + len(succ)
         if testing:
-            print("  "*depth, "minDepth: ", depth, "Total:", count, "Successors: ", len(game.successors(state)))
+            print("  "*depth, "minDepth: ", depth, "Total:", count, "Successors: ", len(succ))
+        # MARKER I think this for loop is the cause, so many succsessors...
+        # I guess it'll eventually update beta, but not for a hWhile
         for (a, s) in succ:
+            # MARKER does this need to be un-Mancala'd?
             # Decide whether to call max_value or min_value, depending on whose move it is next.
             # Some games, such as Mancala, sometimes allow the same player to make multiple moves.
             if state.to_move == s.to_move:
@@ -425,7 +471,8 @@ def alphabeta_search(state, game, d=4, cutoff_test=None, eval_fn=None):
         return v
 
     def right_value(s, alpha, beta, depth):
-        if s.to_move == state.to_move:
+        # note: had to add '.id' to fix if condition
+        if s.to_move.id == state.to_move.id:
             return max_value(s, -BigInitialValue, BigInitialValue, 0)
         else:
             return min_value(s, -BigInitialValue, BigInitialValue, 0)
@@ -434,8 +481,8 @@ def alphabeta_search(state, game, d=4, cutoff_test=None, eval_fn=None):
     # The default test cuts off at depth d or at a terminal state
     cutoff_test = (cutoff_test or
                    (lambda state,depth: depth>d or game.terminal_test(state)))
-    eval_fn = eval_fn or (lambda state: game.utility(state, player.id))
-    # MARKER things should work up to here
+    eval_fn = eval_fn or (lambda state: game.utility(state,))
+    # MARKER things work smoothly up to here
     action, state = argmax(game.successors(state),
                            # lambda ((a, s)): right_value(s, -BigInitialValue, BigInitialValue, 0))
                             lambda a_s: right_value(a_s[1], -BigInitialValue, BigInitialValue, 0))
@@ -482,6 +529,7 @@ def play_blokus(blokus):
     
     while blokus.winner() is None:
         blokus.play()
+        # MARKER we don't make it past here
         render(blokus.board.state)
         #blokus.board.print_board();
         for player in blokus.players:
