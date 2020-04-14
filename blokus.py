@@ -371,12 +371,12 @@ def AI_Player(player, game):
         print("WE'RE OUTTA MOVES")
         return None; # no possible move left
 
-    opponent = None
-    for p in game.players:
-        if player.id != p.id:
-            opponent = p
-    p1_copy = copy.deepcopy(opponent)
-    p2_copy = copy.deepcopy(player)
+    # opponent = None
+    # for p in game.players:
+    #     if player.id != p.id:
+    #         opponent = p
+    # p1_copy = copy.deepcopy(opponent)
+    # p2_copy = copy.deepcopy(player)
     game_copy = copy.deepcopy(game)
     # let's say AI is always P2 (so P2 in code)
 
@@ -387,7 +387,7 @@ def AI_Player(player, game):
 
     #every time it's my turn, transform current info into appropriate state and game to be used only within ab search:
     # old: boardstate = BoardState(player.id, calculate_utility(player, game), game.state.board, player.possible_moves(player.pieces, game))
-    boardstate = BoardState(game_copy, p1_copy, p2_copy, TotalStartingSize)
+    boardstate = BoardState(game_copy)
 
     #this is called to do the following for every move:
     #perform alphabeta search and return the output, which should be in the form of a Piece with move info
@@ -491,13 +491,12 @@ def alphabeta_search(state, game, d=1, cutoff_test=None, eval_fn=None):
 
 class BoardState:
     """Holds one state of the Mancala board."""
-    def __init__(self, game=None, p1=None, p2=None, utility=None):
+    def __init__(self, game=None):
         self.game = game
-        self.p1 = p1
-        self.p2 = p2
+        self.p1 = [p for p in game.players if p.id == 1][0]
+        self.p2 = [p for p in game.players if p.id == 2][0]
         # current player should be known as game.players[0]
         self.to_move = game.players[0]
-        self._utility =  utility
         self._board = game.board
         self._moves = game.players[0].possible_moves(game.players[0].pieces, game)
 
