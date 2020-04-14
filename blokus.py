@@ -272,25 +272,8 @@ class Blokus:
 
         # need to update board with move, whose turn it is, and current player's new stats
 
-        # somewhere, create a new BoardState and update it before returning
-        # set player to opponent
-
-        # current = self.to_move(state); # get current player id?
-
-        # # copy current boardstate and operate on copy?
-        # # newboard = copy.deepcopy(state)
-
-        # newboard = BoardState(opponent(self.to_move(state)), None, self.board, None)
-
-        # # update the board and the player status
-        # newboard.board.update(current.id, move.points);
-
-
         # at this point, at least one move has been made, winner is known to be None, and a vaild move has been passed in
 
-        # boardstate = BoardState(game_copy, p1_copy, p2_copy, game.calculate_utility())
-
-        # TODO fix this shish. copy/copies?
         newboard = copy.deepcopy(state)
 
         current = newboard.to_move; # get current player
@@ -308,59 +291,6 @@ class Blokus:
         newboard.game.rounds += 1; # update game round
         newboard._moves = newboard.game.players[0].possible_moves(newboard.game.players[0].pieces, newboard.game)
         return newboard
-
-        # Note where the opponent's mancala is located
-        # if self.to_move == P1:
-        #     oppMancala = P0Mancala
-        # else:
-        #     oppMancala = P1Mancala
-        # if move != None:
-        #     # the number of pieces to be distributed around the board
-        #     pieceCount = newboard._board[move]
-        #     # set the move position's piece count to 0
-        #     newboard._board[move] = 0
-
-        #     # figure out the first bin that gets a piece distributed to it
-        #     position = (move + 1) % 14
-        #     # keep distributing pieces until you run out
-        #     while pieceCount > 0:
-        #         # don't distribute a piece to the opponent's mancala
-        #         if position != oppMancala:
-        #             newboard._board[position] += 1
-        #             pieceCount -= 1
-        #         position = (position + 1) % 14
-
-        #     # if last move is into a previously empty bin owned by mover, then capture
-        #     # the opponent's pieces from the opposite bin
-        #     lastMove = (position - 1) % 14
-        #     inRange = False
-        #     if self.to_move == P0:
-        #         if lastMove in range(P0Start, P0Mancala):
-        #             inRange = True
-        #     else:
-        #         if lastMove in range(P1Start, P1Mancala):
-        #             inRange = True
-        #     if (newboard._board[lastMove] == 1) and inRange:
-        #         # Magically, in our representation the "opposite" bin is always in the
-        #         # array position 12 - Bin.
-        #         oppBin = 12 - lastMove
-        #         oppCount = newboard._board[oppBin]
-        #         newboard._board[oppBin] = 0
-        #         # print "!!! captured ", oppCount, " pieces from bin: ", oppBin
-        #         if self.to_move == P0:
-        #             newboard._board[P0Mancala] += oppCount
-        #         else:
-        #             newboard._board[P1Mancala] += oppCount
-
-        #     # if last move is into the player's own Mancala, then they get another turn
-        #     #  Note that this is kind of weird from a Minimax search perspective.
-        #     if (self.to_move == P0) and (lastMove == P0Mancala):
-        #         newboard.to_move = self.to_move
-        #     elif (self.to_move == P1) and (lastMove == P1Mancala):
-        #         newboard.to_move = self.to_move
-            
-        # newboard._moves = newboard.calculate_legal_moves()
-        # return newboard
     
     def to_move(self, state):
         "Return the player whose move it is in this state."
@@ -414,22 +344,7 @@ def AI_Player(player, game):
     p1_copy = copy.deepcopy(opponent)
     p2_copy = copy.deepcopy(player)
     game_copy = copy.deepcopy(game)
-    # wait, should we do this or just pass in a copy of game?
-    
-    # ASSUME THAT WE ARE HARD-CODING AI AS P2
     # let's say AI is always P2 (so P2 in code)
-    # our player.id should be 2
-
-    # basic heuristic: incentivize playing largest remaining piece on each move
-    # gets called in ab on new states
-    # def calculate_utility(self, boardstate):
-    #     current = self.players[0]
-    #     sum = 0
-    #     # count the number of squares in all remaining pieces
-    #     for p in current.pieces:
-    #         sum += p.size
-    #     # small sum => high utility
-    #     return TotalStartingSize - sum
 
     # player.id is an int
     # calculate_utility returns an int (0, 89)
@@ -440,39 +355,10 @@ def AI_Player(player, game):
     # old: boardstate = BoardState(player.id, calculate_utility(player, game), game.state.board, player.possible_moves(player.pieces, game))
     boardstate = BoardState(game_copy, p1_copy, p2_copy, game.calculate_utility())
 
-    # def __init__(self, game=None, p1=None, p2=None, utility=None):
-
-    # state
-    # to_move is the player whose turn it is in this state
-    # utility is the eval_function, calculate_utility in AcostaPlayer (heuristic val for each state)
-    # board may already be accounted for with game.state.board
-    # moves is usually assigned with the val of calculate_legal_moves in BoardState
-    # only state.to_move is called, but state is passed as a param to a lot of things, which access the following attributes like so:
-    # player = game.to_move(state)
-    # eval_fn(state)? 
-    # succ = game.successors(state)
-    # cutoff_test(state, depth)
-    # if state.to_move == s.to_move:
-    # (lambda state,depth: depth>d or game.terminal_test(state))
-    # eval_fn or (lambda state: game.utility(state, game.current_player)
-
-    # game (note: this is a Blokus obj, new methods should go there maybe)
-    # methods used in alphabeta_search:
-    # to_move
-    # successors(state)
-    # terminal_test(state)
-    # utility(state, game.current_player)
-
     #this is called to do the following for every move:
     #perform alphabeta search and return the output, which should be in the form of a Piece with move info
     return alphabeta_search(boardstate, game_copy, 4, None, None)
     #note: other code already takes care of making the actual move ingame
-
-    # things we have access to:
-    # player's remaining pieces
-    # game.board.state gives phat array
-    # possible moves (below?)
-    # what is being returned? It's a Piece with loc/permuation info attached
 
 def alphabeta_search(state, game, d=4, cutoff_test=None, eval_fn=None):
     """Search game to determine best action; use alpha-beta pruning.
