@@ -166,6 +166,44 @@ class Player:
                                     placements.append(candidate);
                                     visited.append(set(candidate.points));
         return placements;
+    
+    # Get a list of the top 12 (or less) most plausible placements
+    def plausible_moves(self, pieces, game):
+        # Updates the corners of the player, in case the
+        # corners have been covered by another player's pieces.
+        self.corners = set([(x, y) for(x, y) in self.corners
+                            if game.board.state[y][x] == '_']);
+
+        placements = [] # a list of possible placements
+        visited = [] # a list placements (a set of points on board)
+
+        
+        # sort by size desc
+        keyfun= operator.attrgetter("size") # this use operative since it's faster than lambda
+        pieces.sort(key=keyfun, reverse=True) # sort is in-place
+        plausible_pieces = pieces[:12]
+
+        # Check every available corners
+        for cr in self.corners:
+            # Check 12 or less plausible pieces
+            for sh in plausible_pieces:
+                # Check every reference point the piece could have.
+                for num in range(sh.size):
+                    # Check every flip
+                    for flip in ["h", "v"]:
+                        # Check every rotation
+                        for rot in [0, 90, 180, 270]:
+                            # Create a copy to prevent an overwrite on the original
+                            candidate = copy.deepcopy(sh);
+                            candidate.create(num, cr);
+                            candidate.flip(flip);
+                            candidate.rotate(rot);
+                            # If the placement is valid and new
+                            if game.valid_move(self, candidate.points):
+                                if not set(candidate.points) in visited:
+                                    placements.append(candidate);
+                                    visited.append(set(candidate.points));
+        return placements;
 
     # Get the next movebased off of the player's strategy
     def next_move(self, game):
@@ -302,7 +340,7 @@ class Blokus:
 
     def successors(self, state):
         "Return a list of legal (move, state) pairs."
-        moves_that_are_legal = state.game.players[0].possible_moves(state.game.players[0].pieces, state.game)
+        moves_that_are_legal = state.game.players[0].plausible_moves(state.game.players[0].pieces, state.game)
         print("there are ", len(moves_that_are_legal), " legal moves")
         # sort by size desc
         keyfun= operator.attrgetter("size") # this use operative since it's faster than lambda
