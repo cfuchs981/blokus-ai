@@ -304,7 +304,8 @@ class Ledge(Piece):
 
             []
         [][][]
-
+        []
+        
         '''
         self.id = 'Ledge';
         self.size = 5;
