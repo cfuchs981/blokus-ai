@@ -2,7 +2,6 @@
 # (the functions that handle the Piece objects).
 
 from utils import *
-# import operator
 import sys
 import math
 import random
@@ -12,12 +11,9 @@ from gui import *
 import copy
 import operator
 
-# necessary?
 count = 0
 testing = 1
 BigInitialValue = 1000000
-P1 = 1
-P2 = 2
 TotalStartingSize = 89
 
 def opponent(player):
@@ -35,7 +31,6 @@ class Board:
         self.ncol = ncol; # total columns
 
         self.state = [['_'] * ncol for i in range(nrow)];
-
 
     def update(self, player_id, placement):
         for row in range(self.nrow):
@@ -176,18 +171,17 @@ class Player:
 
         placements = [] # a list of possible placements
         visited = [] # a list placements (a set of points on board)
-
         
         # sort by size desc
-        keyfun= operator.attrgetter("size") # this use operative since it's faster than lambda
-        pieces.sort(key=keyfun, reverse=True) # sort is in-place
-        plausible_pieces = pieces[:12]
+        keyfun= operator.attrgetter("size") # faster sort than lambda
+        pieces.sort(key=keyfun, reverse=True) # sort in-place
+        plausible_pieces = pieces[:12] # take up to the first 12
 
-        # Check every available corners
+        # Check every available corner
         for cr in self.corners:
-            # Check 12 or less plausible pieces
+            # Check up to 12 plausible pieces
             for sh in plausible_pieces:
-                # Check every reference point the piece could have.
+                # Check every reference point the piece could have
                 for num in range(sh.size):
                     # Check every flip
                     for flip in ["h", "v"]:
@@ -307,16 +301,7 @@ class Blokus:
 
     def make_move(self, move, state):
         "Return a new BoardState reflecting move made from given board state."
-        # we don't want to adjust the prime BoardState copy here, but we need to update board, game, and player info
-
-        # SOLUTION: copy everything again into a newboard that starts off as a copy but gets updated with post-move new state stats
-
-        # need to update board with move, whose turn it is, and current player's new stats
-
-        # at this point, at least one move has been made, winner is known to be None, and a vaild move has been passed in
-
         newboard = copy.deepcopy(state)
-
         current = newboard.to_move; # get current player
 
         # update the board and the player status
@@ -324,14 +309,9 @@ class Blokus:
         current.update_player(move, newboard._board);
         current.remove_piece(move); # remove used piece
         # put the current player to the back of the queue
-        # this may result in some references to copies?
         first = newboard.game.players.pop(0);
         newboard.game.players += [first];
         newboard.game.rounds += 1; # update game round
-        # MARKER @ this is the holdup!
-        # we probably do need to updtae the opponent's info bc we'll need to look at their pieces...wait...
-        # can our blocking strategy work without having to access their moves?
-        # newboard._moves = newboard.game.players[0].possible_moves(newboard.game.players[0].pieces, newboard.game)
         return newboard
 
     def successors(self, state):
@@ -339,8 +319,8 @@ class Blokus:
         moves_that_are_legal = state.to_move.plausible_moves(state.to_move.pieces, state.game)
         print("there are ", len(moves_that_are_legal), " legal moves")
         # sort by size desc
-        keyfun= operator.attrgetter("size") # this use operative since it's faster than lambda
-        moves_that_are_legal.sort(key=keyfun, reverse=True) # sort is in-place
+        keyfun= operator.attrgetter("size") # faster sort than lambda
+        moves_that_are_legal.sort(key=keyfun, reverse=True) # in-place
         first_twelve_or_less = moves_that_are_legal[:12]
         print("we're only gonna try making ", len(first_twelve_or_less), " of them")
         print("they have the following sizes:")
@@ -348,28 +328,16 @@ class Blokus:
         for i in first_twelve_or_less:
             test += (str(i.size) + " ")
         print(test)
-        # cutoff shouldn't be an issue bc this should only list direct successors. is that too many?
         m = [(move, self.make_move(move, state))
                 for move in first_twelve_or_less]
-        # this IS reached after generating 58 successors
-        #print(m)
-
-        # MARKER let's try some stuff
-        # sort the list
-        # m.sort(key=lambda x: x[0].size, reverse=True)
-        print("we're returning ", len(m[:12]), " elements:")
-        test2 = ""
-        for i in m[:12]:
-            test2 += (str(i[0].size) + " ")
-        print(test2)
-        return m[:1]
+        # IMPORTANT! performance is terrible with 12, only returning 2 atm
+        return m[:2]
 
     def terminal_test(self, state):
         "Return True if this is a final state for the game."
         return not state.to_move.possible_moves(state.to_move.pieces, state.game)
 
     # gets called in ab on new states
-    # interesetingly enough, this also currently represents base score
     def calculate_utility(self, boardstate):
         current = boardstate.to_move
         sum = 0
@@ -395,43 +363,22 @@ def Random_Player(player, game):
             options.remove(piece); # remove it from the options
     return None; # no possible move left
 
-# should resemble MyPlayer and use fxns from ai_helper, may need to adjust params. seems like a new obj will need to be created just for each special state
+# AI Strategy: choose a move based on utility
 def AI_Player(player, game):
+    # note: this was programmed such that AI is always P2
+    # the following will execute every time it's our turn:
+
     # if no possible moves in this state, return None
     if len(player.possible_moves(player.pieces, game)) <= 0:
         print("WE'RE OUTTA MOVES")
         return None; # no possible move left
 
-    # opponent = None
-    # for p in game.players:
-    #     if player.id != p.id:
-    #         opponent = p
-    # p1_copy = copy.deepcopy(opponent)
-    # p2_copy = copy.deepcopy(player)
+    # copy current game info into a BoardState to be used within ab search:
     game_copy = copy.deepcopy(game)
-    # let's say AI is always P2 (so P2 in code)
-
-    # player.id is an int
-    # calculate_utility returns an int (0, 89)
-    # game.state.board returns the board array thing
-    # possible_moves is an array of Piece objs that represent moves
-
-    #every time it's my turn, transform current info into appropriate state and game to be used only within ab search:
-    # old: boardstate = BoardState(player.id, calculate_utility(player, game), game.state.board, player.possible_moves(player.pieces, game))
     boardstate = BoardState(game_copy)
 
-    #this is called to do the following for every move:
-    #perform alphabeta search and return the output, which should be in the form of a Piece with move info
-    # MARKER something in here is getting hung up
-    # changing the depth to 1 is not sufficient
-    # I don't think we can make make_move any more efficient
-    # lets try limiting the number of possible moves that are considered
-    return alphabeta_search(boardstate, game_copy, 1, None, None)
-    # return p2_copy.possible_moves(p2_copy.pieces, game_copy)[0]
-    # if you return a single move, it works
-    print("IT SHOULD'VE WORKED")
-    #note: other code already takes care of making the actual move ingame
-    # the above could be TESTED with a default move?
+    # perform alphabeta search and return a useful move
+    return alphabeta_search(boardstate, game_copy, 2, None, None)
 
 def alphabeta_search(state, game, d=1, cutoff_test=None, eval_fn=None):
     """Search game to determine best action; use alpha-beta pruning.
@@ -458,7 +405,7 @@ def alphabeta_search(state, game, d=1, cutoff_test=None, eval_fn=None):
             print("  "*depth, "maxDepth: ", depth, "Total:", count, "Successors: ", len(succ))
         for (a, s) in succ:
             # Decide whether to call max_value or min_value, depending on whose move it is next.
-            # Some games, such as Mancala, sometimes allow the same player to make multiple moves.
+            # A player can move repeatedly if opponent is completely blocked
             if state.to_move == s.to_move:
                 v = max(v, max_value(s, alpha, beta, depth+1))
             else:
@@ -483,12 +430,9 @@ def alphabeta_search(state, game, d=1, cutoff_test=None, eval_fn=None):
         count = count + len(succ)
         if testing:
             print("  "*depth, "minDepth: ", depth, "Total:", count, "Successors: ", len(succ))
-        # MARKER I think this for loop is the cause, so many succsessors...
-        # I guess it'll eventually update beta, but not for a hWhile
         for (a, s) in succ:
-            # MARKER does this need to be un-Mancala'd?
             # Decide whether to call max_value or min_value, depending on whose move it is next.
-            # Some games, such as Mancala, sometimes allow the same player to make multiple moves.
+            # A player can move repeatedly if opponent is completely blocked
             if state.to_move == s.to_move:
                 v = min(v, min_value(s, alpha, beta, depth+1))
             else:
@@ -501,7 +445,6 @@ def alphabeta_search(state, game, d=1, cutoff_test=None, eval_fn=None):
         return v
 
     def right_value(s, alpha, beta, depth):
-        # note: had to add '.id' to fix if condition
         if s.to_move.id == state.to_move.id:
             return max_value(s, -BigInitialValue, BigInitialValue, 0)
         else:
@@ -512,7 +455,6 @@ def alphabeta_search(state, game, d=1, cutoff_test=None, eval_fn=None):
     cutoff_test = (cutoff_test or
                    (lambda state,depth: depth>d or game.terminal_test(state)))
     eval_fn = eval_fn or (lambda state: game.utility(state,))
-    # MARKER things work smoothly up to here
     action, state = argmax(game.successors(state),
                            # lambda ((a, s)): right_value(s, -BigInitialValue, BigInitialValue, 0))
                             lambda a_s: right_value(a_s[1], -BigInitialValue, BigInitialValue, 0))
@@ -525,7 +467,6 @@ class BoardState:
         self.game = game
         self.p1 = [p for p in game.players if p.id == 1][0]
         self.p2 = [p for p in game.players if p.id == 2][0]
-        # current player should be known as game.players[0]
         self.to_move = game.players[0]
         self._board = game.board
 
