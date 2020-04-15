@@ -12,13 +12,16 @@ import copy
 import operator
 
 count = 0
-# NOTE: testing comments call eval_fn which slows things down
 testing = 0
 BigInitialValue = 1000000
 TotalStartingSize = 89
-# PiecesToConsider = 2
+# change MTC to adjust the number of successor states returned
 MovesToConsider = 2
 
+# NOTE: I have some print() commands throughout my code that you can uncomment to see what's happening where
+# also give it a minute when you first hit run, it'll take about 40 seconds before anything shows up in the window or in the output
+
+# Board class works fine, proabbly irrelevant to AI troubleshooting
 # Blokus Board
 class Board:
     def __init__(self, nrow, ncol):
@@ -125,6 +128,7 @@ class Player:
                 self.corners.add(c);
 
     # Get a unique list of all possible placements
+    # NOTE: this takes a while to run
     def possible_moves(self, pieces, game):
         # Updates the corners of the player, in case the
         # corners have been covered by another player's pieces.
@@ -156,7 +160,7 @@ class Player:
                                     visited.append(set(candidate.points));
         return placements;
 
-    # Get the next movebased off of the player's strategy
+    # Get the next move based off of the player's strategy
     def next_move(self, game):
         return self.strategy(self, game);
 
@@ -257,6 +261,9 @@ class Blokus:
 
     def make_move(self, move, state):
         "Return a new BoardState reflecting move made from given board state."
+        # NOTE: BoardState used to have a '_moves" attribute to hold possible moves so that costly possible_moves() didn't have to be called in terminal_test, utility, etc. In each of these functions, possible moves could be accessed directly via state._moves instead of calling possible_moves(), which made them much more efficient.
+        # The problem with that was that, when making a copy 'newboard' and updating it to reflect the state of the game post-move using this function, possible_moves() has to be called here to update _moves for newboard. This function gets called a LOT, so calling possible_moves() every time slows things down to an unreasonable extent.
+        # To account for this, I got rid of BoardState's '_moves' attribute. This allows make_move to run without calling possible_moves(), but also requires terminal_test, utility, etc. to call the costly possible_moves() function every time they execute. Which I think is not as bad, but still incredibly slow.
         newboard = copy.deepcopy(state)
         current = newboard.to_move; # get current player
 
@@ -272,28 +279,42 @@ class Blokus:
 
     def successors(self, state):
         "Return a list of legal (move, state) pairs."
+        # NOTE: ideally, this would look at all possible moves and return (move, state) pairs for every single one of them. However, this causes alphabeta stuff to scale out of control, as I haven't been able to find a way to make some the needed functions (utility, make_move, terminal_test, and this function) fast enough for that to be feasible.
+        # The approach was to define a global constant MovesToConsider that represents the number of successors we actually want to return, knowing that we can't return all of them (there are often hundreds).
+        # I was hoping to slowly start increasing MTC until the average move time got out of hand, but I'm finding that it takes ~40 seconds just to consider 2 moves.
+
         # VARIABLE VERSION: find and return all possible moves as successors
-        # even only 2 successors still takes ~40s per turn
         legal_possible_moves = state.to_move.possible_moves(state.to_move.pieces, state.game)
-        print("there are ", len(legal_possible_moves), " legal plausible moves")
+        # print("there are ", len(legal_possible_moves), " legal plausible moves")
         succ = legal_possible_moves[:MovesToConsider]
-        print("we're only gonna try making ", len(succ), " of them")
+        # print("we're only gonna try making ", len(succ), " of them")
         m = [(move, self.make_move(move, state))
-                for move in succ]
+            for move in succ]
         return m
+
+        # try out the original version by commenting out the blobk above and uncommenting the block below
+
+        # # ORIGINAL VERSION: find and return all possible moves as successors
+        # # this takes an unreasonably long time. like, hours.
+        # legal_possible_moves = state.to_move.possible_moves(state.to_move.pieces, state.game)
+        # m = [(move, self.make_move(move, state))
+        #         for move in legal_possible_moves]
+        # return m
 
     def terminal_test(self, state):
         "Return True if this is a final state for the game."
-        # if we have no moves left, it's basically a final state
-        print("we're in terminal test")
+        # if we have no moves left, it's apparently (effectively) a final state
+        # print("we're in terminal test")
         return not state.to_move.possible_moves(state.to_move.pieces, state.game)
 
     # gets called in ab search on new states
     def utility(self, state):
         "This is where your utility function gets called."
-        # NOTE: for this to truly be effective, we've got to be able to consider a lot of options quickly
-        # for example, it may be better to play a smaller piece when large pieces are available, but bc we only consider the largest pieces first this might never do that
-        print("starting utility")
+        # NOTE: this is currently the complexity I'm shooting for. Any less than this and it's really just a slightly-strategized random player, and nothing close to what alphabeta_search should be capable of
+        # For this to truly be effective, we've got to be able to consider a lot of options quickly. Right now we can only consider like 2, which by default are picked from among the largest pieces first. This is usually enough to beat a random player. There are instances, however, where it may be better to play a smaller piece even though large pieces are available, but bc we only consider the largest pieces first, this might never do that.
+        # it may be near-impossible to consider every single successor for every single move, but if we can get the number from 2 up to something even a little better (say 12), we might be able to program it to intelligently select those 12 moves from a variety of different pieces (rather than just 2 of the largest ones), which may be enough to make this thing a decent player.
+
+        # print("starting utility")
         current = state.to_move
         current_possibles = current.possible_moves(current.pieces, state.game)
         opponent = state.game.players[1]
@@ -304,8 +325,6 @@ class Blokus:
             # subtract current remaining squares from initial 89
             # less pieces => higher utility
             total -= p.size
-
-        # possible_moves(pieces, game)
 
         # if there's only one piece left and we can play it
         if len(current.pieces) == 1 and current_possibles != []:
@@ -320,7 +339,7 @@ class Blokus:
         total += len(current_possibles)
         # subtract a point for every possible move our opponent has
         total -= len(opponent.possible_moves(opponent.pieces, state.game))
-        print("returning utility")
+        # print("returning utility")
         return total
 
 # Random Strategy: choose an available piece randomly
@@ -340,10 +359,10 @@ def AI_Player(player, game):
     # note: this was programmed such that AI is always P2
     # the following will execute every time it's our turn:
     moves = player.possible_moves(player.pieces, game)
-    print("POSSIBLE MOVES AT THE BEGINNING OF TURN: ", len(moves))
+    # print("POSSIBLE MOVES AT THE BEGINNING OF TURN: ", len(moves))
     # if no possible moves in this state, return None
     if len(moves) <= 0:
-        print("WE'RE OUTTA MOVES")
+        # print("WE'RE OUTTA MOVES")
         return None; # no possible move left
 
     # copy current game info into a BoardState to be used within ab search:
@@ -370,7 +389,7 @@ def alphabeta_search(state, d=1, cutoff_test=None, eval_fn=None):
         if cutoff_test(state, depth):
             if testing:
                 print("  "* depth, "Max cutoff returning ", eval_fn(state))
-            print("max returning early from cutoff test!")
+            # print("max returning early from cutoff test!")
             return eval_fn(state)
         v = -BigInitialValue
         succ = state.game.successors(state)
@@ -378,28 +397,28 @@ def alphabeta_search(state, d=1, cutoff_test=None, eval_fn=None):
         count = count + len(succ)
         if testing:
             print("  "*depth, "maxDepth: ", depth, "Total:", count, "Successors: ", len(succ))
-        print("starting max succ loop")
+        # print("starting max succ loop")
         for (a, s) in succ:
             # this is taking a long time to output in btwn each boardstate
-            print(s)
+            # print(s)
             # Decide whether to call max_value or min_value, depending on whose move it is next.
             # A player can move repeatedly if opponent is completely blocked
             if state.to_move == s.to_move:
-                print("taking max_value branch in max")
+                # print("taking max_value branch in max")
                 v = max(v, max_value(s, alpha, beta, depth+1))
-                print("just assigned v from max_value branch in max")
+                # print("just assigned v from max_value branch in max")
             else:
-                print("taking min_value branch in max")
+                # print("taking min_value branch in max")
                 v = max(v, min_value(s, alpha, beta, depth+1))
-                print("just assigned v from min_value branch in max")
+                # print("just assigned v from min_value branch in max")
             if testing:
                 print("  "* depth, "max best value:", v)
             if v >= beta:
-                print("early return in max succ loop")
+                # print("early return in max succ loop")
                 return v
             alpha = max(alpha, v)
-            print("end of max iteration")
-        print("returning after max succ loop")
+            #print("end of max iteration")
+        #print("returning after max succ loop")
         return v
 
     def min_value(state, alpha, beta, depth):
@@ -409,7 +428,7 @@ def alphabeta_search(state, d=1, cutoff_test=None, eval_fn=None):
         if cutoff_test(state, depth):
             if testing:
                 print("  "*depth, "Min cutoff returning ", eval_fn(state))
-            print("min returning early from cutoff test!")
+            # print("min returning early from cutoff test!")
             return eval_fn(state)
         v = BigInitialValue
         succ = state.game.successors(state)
@@ -417,28 +436,28 @@ def alphabeta_search(state, d=1, cutoff_test=None, eval_fn=None):
         count = count + len(succ)
         if testing:
             print("  "*depth, "minDepth: ", depth, "Total:", count, "Successors: ", len(succ))
-        print("starting min succ loop")
+        # print("starting min succ loop")
         for (a, s) in succ:
             # this is taking a long time to output in btwn each boardstate
-            print(s)
+            # print(s)
             # Decide whether to call max_value or min_value, depending on whose move it is next.
             # A player can move repeatedly if opponent is completely blocked
             if state.to_move == s.to_move:
-                print("taking min_value branch in min")
+                # print("taking min_value branch in min")
                 v = min(v, min_value(s, alpha, beta, depth+1))
-                print("just assigned v from min_value branch in min")
+                # print("just assigned v from min_value branch in min")
             else:
-                print("taking max_value branch in min")
+                # print("taking max_value branch in min")
                 v = min(v, max_value(s, alpha, beta, depth+1))
-                print("just assigned v from max_value branch in min")
+                # print("just assigned v from max_value branch in min")
             if testing:
                 print("  "*depth, "min best value:", v)
             if v <= alpha:
-                print("early return in min succ loop")
+                # print("early return in min succ loop")
                 return v
             beta = min(beta, v)
-            print("end of min iteration")
-        print("returning after min succ loop")
+            # print("end of min iteration")
+        # print("returning after min succ loop")
         return v
 
     def right_value(s, alpha, beta, depth):
@@ -454,9 +473,9 @@ def alphabeta_search(state, d=1, cutoff_test=None, eval_fn=None):
                    (lambda state,depth: depth>d or state.game.terminal_test(state)))
     eval_fn = eval_fn or (lambda state: state.game.utility(state))
     # TODO: revert this
-    test = state.game.successors(state)
-    print(test)
-    action, state = argmax(test,
+    # test = state.game.successors(state)
+    # print(test)
+    action, state = argmax(state.game.successors(state),
                            # lambda ((a, s)): right_value(s, -BigInitialValue, BigInitialValue, 0))
                             lambda a_s: right_value(a_s[1], -BigInitialValue, BigInitialValue, 0))
     print("Final count: ", count)
