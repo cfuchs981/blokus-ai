@@ -333,14 +333,10 @@ class Blokus:
         # can our blocking strategy work without having to access their moves?
         # newboard._moves = newboard.game.players[0].possible_moves(newboard.game.players[0].pieces, newboard.game)
         return newboard
-    
-    def to_move(self, state):
-        "Return the player whose move it is in this state."
-        return state.to_move
 
     def successors(self, state):
         "Return a list of legal (move, state) pairs."
-        moves_that_are_legal = state.game.players[0].plausible_moves(state.game.players[0].pieces, state.game)
+        moves_that_are_legal = state.to_move.plausible_moves(state.to_move.pieces, state.game)
         print("there are ", len(moves_that_are_legal), " legal moves")
         # sort by size desc
         keyfun= operator.attrgetter("size") # this use operative since it's faster than lambda
@@ -370,7 +366,7 @@ class Blokus:
 
     def terminal_test(self, state):
         "Return True if this is a final state for the game."
-        return not state.game.players[0].possible_moves(state.game.players[0].pieces, state.game)
+        return not state.to_move.possible_moves(state.to_move.pieces, state.game)
 
     # gets called in ab on new states
     # interesetingly enough, this also currently represents base score
@@ -444,9 +440,8 @@ def alphabeta_search(state, game, d=1, cutoff_test=None, eval_fn=None):
     global testing
     global BigInitialValue
     
-    player = game.to_move(state)
+    player = state.to_move
     count = 0
-    # we make it here, only once
 
     def max_value(state, alpha, beta, depth):
         global count, testing
