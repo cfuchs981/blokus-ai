@@ -16,7 +16,7 @@ count = 0
 testing = 0
 BigInitialValue = 1000000
 TotalStartingSize = 89
-PiecesToConsider = 2
+# PiecesToConsider = 2
 MovesToConsider = 2
 
 # Blokus Board
@@ -155,43 +155,6 @@ class Player:
                                     placements.append(candidate);
                                     visited.append(set(candidate.points));
         return placements;
-    
-    # Get a list of up to PiecesToConsider plausible placements
-    def plausible_moves(self, pieces, game):
-        # NOTE: may need to fixz
-        print("starting plausible moves")
-        # Updates the corners of the player, in case the
-        # corners have been covered by another player's pieces.
-        self.corners = set([(x, y) for(x, y) in self.corners
-                            if game.board.state[y][x] == '_']);
-
-        placements = [] # a list of possible placements
-        visited = [] # a list placements (a set of points on board)
-        # take up to PiecesToConsider
-        plausible_pieces = pieces[:PiecesToConsider] 
-
-        # Check every available corner
-        for cr in self.corners:
-            # Check up to 12 plausible pieces
-            for sh in plausible_pieces:
-                # Check every reference point the piece could have
-                for num in range(sh.size):
-                    # Check every flip
-                    for flip in ["h", "v"]:
-                        # Check every rotation
-                        for rot in [0, 90, 180, 270]:
-                            # Create a copy to prevent an overwrite on the original
-                            candidate = copy.deepcopy(sh);
-                            candidate.create(num, cr);
-                            candidate.flip(flip);
-                            candidate.rotate(rot);
-                            # If the placement is valid and new
-                            if game.valid_move(self, candidate.points):
-                                if not set(candidate.points) in visited:
-                                    placements.append(candidate);
-                                    visited.append(set(candidate.points));
-        print("returning placements: ", placements)
-        return placements;
 
     # Get the next movebased off of the player's strategy
     def next_move(self, game):
@@ -309,22 +272,14 @@ class Blokus:
 
     def successors(self, state):
         "Return a list of legal (move, state) pairs."
-        # OLD PLAUSIBLE CODE
-        # # although plausible_moves only takes PiecesToConsider, it returns many more
-        # legal_plausible_moves = state.to_move.plausible_moves(state.to_move.pieces, state.game)
-        # print("there are ", len(legal_plausible_moves), " legal plausible moves")
-        # succ = legal_plausible_moves[:MovesToConsider]
-        # print("we're only gonna try making ", len(succ), " of them")
-        
-        # LONG VERSION: find and return all possible moves as successors
-        # this takes an unreasonably long time
+        # VARIABLE VERSION: find and return all possible moves as successors
+        # even only 2 successors still takes ~40s per turn
         legal_possible_moves = state.to_move.possible_moves(state.to_move.pieces, state.game)
         print("there are ", len(legal_possible_moves), " legal plausible moves")
-        # succ = legal_plausible_moves[:MovesToConsider]
-        print("we're only gonna try making ", len(legal_possible_moves), " of them")
+        succ = legal_possible_moves[:MovesToConsider]
+        print("we're only gonna try making ", len(succ), " of them")
         m = [(move, self.make_move(move, state))
-                for move in legal_possible_moves]
-        # IMPORTANT! performance is terrible with 12, only returning 2 atm
+                for move in succ]
         return m
 
     def terminal_test(self, state):
@@ -384,9 +339,10 @@ def Random_Player(player, game):
 def AI_Player(player, game):
     # note: this was programmed such that AI is always P2
     # the following will execute every time it's our turn:
-    print("POSSIBLE MOVES AT THE BEGINNING OF TURN: ", len(player.possible_moves(player.pieces, game)))
+    moves = player.possible_moves(player.pieces, game)
+    print("POSSIBLE MOVES AT THE BEGINNING OF TURN: ", len(moves))
     # if no possible moves in this state, return None
-    if len(player.possible_moves(player.pieces, game)) <= 0:
+    if len(moves) <= 0:
         print("WE'RE OUTTA MOVES")
         return None; # no possible move left
 
@@ -395,9 +351,9 @@ def AI_Player(player, game):
     state = BoardState(game_copy)
 
     # perform alphabeta search and return a useful move
-    return alphabeta_search(state, game_copy, 2, None, None)
+    return alphabeta_search(state, 1, None, None)
 
-def alphabeta_search(state, game, d=1, cutoff_test=None, eval_fn=None):
+def alphabeta_search(state, d=1, cutoff_test=None, eval_fn=None):
     """Search game to determine best action; use alpha-beta pruning.
     This version cuts off search and uses an evaluation function."""
     global count
@@ -417,7 +373,7 @@ def alphabeta_search(state, game, d=1, cutoff_test=None, eval_fn=None):
             print("max returning early from cutoff test!")
             return eval_fn(state)
         v = -BigInitialValue
-        succ = game.successors(state)
+        succ = state.game.successors(state)
         # MARKER hangup happens after this but before next call to succ, succ runs quickly tho
         count = count + len(succ)
         if testing:
@@ -456,7 +412,7 @@ def alphabeta_search(state, game, d=1, cutoff_test=None, eval_fn=None):
             print("min returning early from cutoff test!")
             return eval_fn(state)
         v = BigInitialValue
-        succ = game.successors(state)
+        succ = state.game.successors(state)
         # MARKER hangup happens after this but before next call to succ, succ runs quickly tho
         count = count + len(succ)
         if testing:
@@ -495,9 +451,10 @@ def alphabeta_search(state, game, d=1, cutoff_test=None, eval_fn=None):
     # THIS IS A MAJOR HANGUP, TERMINAL_TEST
     # The default test cuts off at depth d or at a terminal state
     cutoff_test = (cutoff_test or
-                   (lambda state,depth: depth>d or game.terminal_test(state)))
-    eval_fn = eval_fn or (lambda state: game.utility(state))
-    test = game.successors(state)
+                   (lambda state,depth: depth>d or state.game.terminal_test(state)))
+    eval_fn = eval_fn or (lambda state: state.game.utility(state))
+    # TODO: revert this
+    test = state.game.successors(state)
     print(test)
     action, state = argmax(test,
                            # lambda ((a, s)): right_value(s, -BigInitialValue, BigInitialValue, 0))
