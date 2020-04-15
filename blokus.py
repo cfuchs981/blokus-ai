@@ -16,8 +16,8 @@ count = 0
 testing = 0
 BigInitialValue = 1000000
 TotalStartingSize = 89
-PiecesToConsider = 2
-MovesToConsider = 2
+# PiecesToConsider = 2
+MovesToConsider = 5
 
 # Blokus Board
 class Board:
@@ -305,6 +305,8 @@ class Blokus:
         first = newboard.game.players.pop(0);
         newboard.game.players += [first];
         newboard.game.rounds += 1; # update game round
+        # this causes epic slowdown and is unavoidable if moves is an attribute of BoardState, no other way to update it for the new state
+        newboard.moves = first.possible_moves(first.pieces, newboard.game)
         return newboard
 
     def successors(self, state):
@@ -316,14 +318,34 @@ class Blokus:
         # succ = legal_plausible_moves[:MovesToConsider]
         # print("we're only gonna try making ", len(succ), " of them")
         
-        # LONG VERSION: find and return all possible moves as successors
-        # this takes an unreasonably long time
-        legal_possible_moves = state.to_move.possible_moves(state.to_move.pieces, state.game)
-        print("there are ", len(legal_possible_moves), " legal plausible moves")
-        # succ = legal_plausible_moves[:MovesToConsider]
-        print("we're only gonna try making ", len(legal_possible_moves), " of them")
+        # # LONG VERSION: find and return all possible moves as successors
+        # # this takes an unreasonably long time
+        # legal_possible_moves = state.to_move.possible_moves(state.to_move.pieces, state.game)
+        # print("there are ", len(legal_possible_moves), " legal plausible moves")
+        # # succ = legal_plausible_moves[:MovesToConsider]
+        # print("we're only gonna try making ", len(legal_possible_moves), " of them")
+        # m = [(move, self.make_move(move, state))
+        #         for move in legal_possible_moves]
+        # # IMPORTANT! performance is terrible with 12, only returning 2 atm
+        # return m
+
+        # # ALT LONG VERSION: find and return all possible moves as successors
+        # # moves are passed in with state, still unreasonably slow
+        # print("there are ", len(state.moves), " legal plausible moves")
+        # # succ = legal_plausible_moves[:MovesToConsider]
+        # print("we're only gonna try making ", len(state.moves), " of them")
+        # m = [(move, self.make_move(move, state))
+        #         for move in state.moves]
+        # # IMPORTANT! performance is terrible with 12, only returning 2 atm
+        # return m
+
+        # ALT MTC VERSION: find and return MTC possible moves as successors
+        # moves are passed in with state, runs incredibly quickly for MTC 2
+        print("there are ", len(state.moves), " legal plausible moves")
+        succ = state.moves[:MovesToConsider]
+        print("we're only gonna try making ", len(succ), " of them")
         m = [(move, self.make_move(move, state))
-                for move in legal_possible_moves]
+                for move in succ]
         # IMPORTANT! performance is terrible with 12, only returning 2 atm
         return m
 
@@ -331,7 +353,7 @@ class Blokus:
         "Return True if this is a final state for the game."
         # if we have no moves left, it's basically a final state
         print("we're in terminal test")
-        return not state.to_move.possible_moves(state.to_move.pieces, state.game)
+        return not state.moves
 
     # gets called in ab search on new states
     def utility(self, state):
@@ -340,15 +362,26 @@ class Blokus:
         # for example, it may be better to play a smaller piece when large pieces are available, but bc we only consider the largest pieces first this might never do that
         print("starting utility")
         current = state.to_move
-        current_possibles = current.possible_moves(current.pieces, state.game)
-        opponent = state.game.players[1]
+        current_possibles = state.moves
+        # opponent = state.game.players[1]
         # start total at 89
         total = TotalStartingSize
+        print("base total ", total)
         # count the number of squares in all remaining pieces
         for p in current.pieces:
             # subtract current remaining squares from initial 89
             # less pieces => higher utility
             total -= p.size
+        print("total minus our pieces", total)
+
+        # opponent_score = -TotalStartingSize
+        # # subtract opponent score
+        # for p in opponent.pieces:
+        #     # subtract current remaining squares from initial 89
+        #     # more pieces => higher utility
+        #     opponent_score += p.size
+        # total -= opponent_score
+        # print("total minus opponent pieces", total)
 
         # possible_moves(pieces, game)
 
@@ -356,16 +389,22 @@ class Blokus:
         if len(current.pieces) == 1 and current_possibles != []:
             # if it's the monomino, add 20 bonus points
             if current.pieces[0].size == 1:
+                print("+20 monomino bonus")
                 total += 20
             # if it's any other piece, only add 15 bonus points
             else:
+                print("+15 bonus")
                 total += 15
+        print("total after one piece left check ", total)
         
         # add a point for every possible move we have
         total += len(current_possibles)
-        # subtract a point for every possible move our opponent has
-        total -= len(opponent.possible_moves(opponent.pieces, state.game))
-        print("returning utility")
+        print("total after adding # of our possible moves ", total)
+        # subtract a point for every corner our opponent has
+        # this is why monomino comes out early, bc it can take out multiple corners. does not correspond to actual blocking
+        total -= len(state.opponent_moves)
+        print("total after subtracting # opponent's possible moves ", total)
+        print("returning utility ", total)
         return total
 
 # Random Strategy: choose an available piece randomly
@@ -384,20 +423,22 @@ def Random_Player(player, game):
 def AI_Player(player, game):
     # note: this was programmed such that AI is always P2
     # the following will execute every time it's our turn:
-    print("POSSIBLE MOVES AT THE BEGINNING OF TURN: ", len(player.possible_moves(player.pieces, game)))
+    moves = player.possible_moves(player.pieces, game)
+    opponent_moves = game.players[1].possible_moves(game.players[1].pieces, game)
+    print("POSSIBLE MOVES AT THE BEGINNING OF TURN: ", len(moves))
     # if no possible moves in this state, return None
-    if len(player.possible_moves(player.pieces, game)) <= 0:
+    if len(moves) <= 0:
         print("WE'RE OUTTA MOVES")
         return None; # no possible move left
 
     # copy current game info into a BoardState to be used within ab search:
     game_copy = copy.deepcopy(game)
-    state = BoardState(game_copy)
+    state = BoardState(game_copy, moves, opponent_moves)
 
     # perform alphabeta search and return a useful move
-    return alphabeta_search(state, game_copy, 2, None, None)
+    return alphabeta_search(state, 1, None, None)
 
-def alphabeta_search(state, game, d=1, cutoff_test=None, eval_fn=None):
+def alphabeta_search(state, d=1, cutoff_test=None, eval_fn=None):
     """Search game to determine best action; use alpha-beta pruning.
     This version cuts off search and uses an evaluation function."""
     global count
@@ -417,7 +458,7 @@ def alphabeta_search(state, game, d=1, cutoff_test=None, eval_fn=None):
             print("max returning early from cutoff test!")
             return eval_fn(state)
         v = -BigInitialValue
-        succ = game.successors(state)
+        succ = state.game.successors(state)
         # MARKER hangup happens after this but before next call to succ, succ runs quickly tho
         count = count + len(succ)
         if testing:
@@ -456,7 +497,7 @@ def alphabeta_search(state, game, d=1, cutoff_test=None, eval_fn=None):
             print("min returning early from cutoff test!")
             return eval_fn(state)
         v = BigInitialValue
-        succ = game.successors(state)
+        succ = state.game.successors(state)
         # MARKER hangup happens after this but before next call to succ, succ runs quickly tho
         count = count + len(succ)
         if testing:
@@ -495,24 +536,28 @@ def alphabeta_search(state, game, d=1, cutoff_test=None, eval_fn=None):
     # THIS IS A MAJOR HANGUP, TERMINAL_TEST
     # The default test cuts off at depth d or at a terminal state
     cutoff_test = (cutoff_test or
-                   (lambda state,depth: depth>d or game.terminal_test(state)))
-    eval_fn = eval_fn or (lambda state: game.utility(state))
-    test = game.successors(state)
+                   (lambda state,depth: depth>d or state.game.terminal_test(state)))
+    eval_fn = eval_fn or (lambda state: state.game.utility(state))
+    # NOTE: revert this
+    test = state.game.successors(state)
     print(test)
     action, state = argmax(test,
                            # lambda ((a, s)): right_value(s, -BigInitialValue, BigInitialValue, 0))
                             lambda a_s: right_value(a_s[1], -BigInitialValue, BigInitialValue, 0))
     print("Final count: ", count)
+    print(action)
     return action
 
 class BoardState:
-    """Holds one state of the Mancala board."""
-    def __init__(self, game=None):
+    """Holds one state of the Blokus board."""
+    def __init__(self, game=None, moves=None, opponent_moves=None):
         self.game = game
         self.p1 = [p for p in game.players if p.id == 1][0]
         self.p2 = [p for p in game.players if p.id == 2][0]
         self.to_move = game.players[0]
         self._board = game.board
+        self.moves = moves
+        self.opponent_moves = opponent_moves
 
 '''
 TODO(AI): tyler
