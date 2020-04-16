@@ -10,14 +10,19 @@ import piece
 from gui import *
 import copy
 import operator
+import time
+import numpy as np
 
 count = 0
 testing = 0
 BigInitialValue = 1000000
 TotalStartingSize = 89
 # change MTC to adjust the number of successor states returned
-MovesToConsider = 2
-Depth = 2
+MovesToConsider = 1
+Depth = 1
+MoveTimes = []
+Outcomes = []
+Games = 2
 
 # NOTE: I have some print() commands throughout my code that you can uncomment to see what's happening where
 # also give it a minute when you first hit run, it'll take about 40 seconds before anything shows up in the window or in the output
@@ -204,9 +209,11 @@ class Player:
                 for possible in possibles:
                     placements.append(possible)
                     if len(placements) == cutoff:
-                        print("cutoff reached! returning ", placements)
+                        # MARKER uncomment this to see pieces
+                        # print("cutoff reached! returning ", placements)
                         return placements
-        print("cutoff NOT reached! returning ", placements)
+        # MARKER uncomment this to see pieces
+        # print("cutoff NOT reached! returning ", placements)
         return placements
 
     # Get the next move based off of the player's strategy
@@ -237,7 +244,7 @@ class Blokus:
             if possibles == []:
                 p.is_blocked = True
             moves.append(possibles)
-        print("Moves: ", moves)
+        #print("Moves: ", moves)
         # print("Winner has found ", moves)
 
         # check how many rounds the total available moves from all players
@@ -279,6 +286,7 @@ class Blokus:
     # Play the game with the list of player sequentially until the
     # game ended (no more pieces can be placed for any player)
     def play(self):
+        global Outcomes
         # At the beginning of the game, it should
         # give the players their pieces and a corner to start.
         if self.rounds == 0: # set up starting corners and players' initial pieces
@@ -312,8 +320,17 @@ class Blokus:
         else: # a winner (or tied) is found
             if len(winner) == 1: # if the game results in a winner
                 self.win_player = winner[0];
+                # hard-coded such that AI is P2
+                # 1 represents an AI win
+                if winner[0] == 2:
+                    Outcomes.append(1)
+                # -1 represents a human win
+                else:
+                    Outcomes.append(-1)
                 print('Game over! The winner is: '+ str(winner[0]));
             else: # if the game results in a tie
+                # 0 represents a tie
+                Outcomes.append(0)
                 print('Game over! Tied between players: '+ ', '.join(map(str, winner)));
 
     def make_move(self, move, state):
@@ -348,10 +365,10 @@ class Blokus:
     # gets called in ab search on new states
     def utility(self, state):
         "This is where your utility function gets called."
-        print("starting utility")
+        # print("starting utility")
         # get current player
         current = state.to_move
-        print("CURRENT ID: ", current.id)
+        # print("CURRENT ID: ", current.id)
 
         # start total at 89
         total = TotalStartingSize
@@ -362,7 +379,7 @@ class Blokus:
             total -= p.size
 
         piece_count = len(current.pieces)
-        print("PIECE COUNT: ", piece_count)
+        # print("PIECE COUNT: ", piece_count)
         # at start, utility is called on states with 21 - (depth+2) pieces
         # blocking and finishing are impossible within the first two moves
         # we're already motivated to play large pieces at the start
@@ -373,11 +390,11 @@ class Blokus:
             opponent = state.game.players[1]
             # if opponent has possible moves
             if not opponent.is_blocked:
-                print("calculating blocking")
+                # print("calculating blocking")
                 current_possibles = current.possible_count(current.pieces, state.game)
-                print("# of current possibles: ", current_possibles)
-                print("estimated current possibles: ", (len(current.corners) * piece_count))
-                print("is opponent blocked? ", opponent.is_blocked)
+                # print("# of current possibles: ", current_possibles)
+                # print("estimated current possibles: ", (len(current.corners) * piece_count))
+                # print("is opponent blocked? ", opponent.is_blocked)
 
                 # add a point for every possible move we have
                 # print("possible moves: ", current_possibles)
@@ -386,18 +403,18 @@ class Blokus:
                 # subtract a point for every possible move our opponent has
                 # print("pre-opponent total: ", total)
                 opponent_possibles = opponent.possible_count(opponent.pieces, state.game)
-                print("# of opponent possibles: ", opponent_possibles)
-                print("estimated opponent possibles: ", (len(opponent.corners) * len(opponent.pieces)))
+                # print("# of opponent possibles: ", opponent_possibles)
+                # print("estimated opponent possibles: ", (len(opponent.corners) * len(opponent.pieces)))
                 total -= opponent_possibles
                 # print("post-opponent total: ", total)
                 # print("returning utility")
 
                 # skip endgame calculations if we don't have exactly one piece
                 if piece_count != 1:
-                    print("no endgame")
+                    # print("no endgame")
                     return total
                 else:
-                    print("calculating endgame")
+                    # print("calculating endgame")
                     # if there's only one piece left and we can play it
                     if current_possibles > 0:
                         # if it's the monomino, add 2000, highest priority
@@ -410,19 +427,20 @@ class Blokus:
             else:
                 # incentivize moves that give us more possibilities
                 current_possibles = current.possible_count(current.pieces, state.game)
-                print("# of current possibles: ", current_possibles)
-                print("estimated current possibles: ", (len(current.corners) * piece_count))
-                print("is opponent blocked? ", opponent.is_blocked)
+                # print("# of current possibles: ", current_possibles)
+                # MARKER uncomment these for estimates
+                # print("estimated current possibles: ", (len(current.corners) * piece_count))
+                # print("is opponent blocked? ", opponent.is_blocked)
 
                 # add a point for every possible move we have
                 # print("possible moves: ", current_possibles)
                 total += current_possibles
                 # skip endgame calculations if we don't have exactly one piece
                 if piece_count != 1:
-                    print("no endgame")
+                    # print("no endgame")
                     return total
                 else:
-                    print("calculating endgame")
+                    # print("calculating endgame")
                     # if there's only one piece left and we can play it
                     if current_possibles > 0:
                         # if it's the monomino, add 2000, highest priority
@@ -431,7 +449,7 @@ class Blokus:
                         # if it's any other piece, only add 1500, also high priority
                         else:
                             total += 1500
-        print("returning utility ", total)
+        # print("returning utility ", total)
         return total
 
 # Random Strategy: choose an available piece randomly
@@ -448,13 +466,15 @@ def Random_Player(player, game):
 
 # AI Strategy: choose a move based on utility
 def AI_Player(player, game):
-    print("starting AI player")
-    print("PIECES AT BEGINNING: ", len(player.pieces))
+    start_time = time.time()
+    # print("HEY ", start_time)
+    # print("starting AI player")
+    # print("PIECES AT BEGINNING: ", len(player.pieces))
     # note: this was programmed such that AI is always P2
     # the following will execute every time it's our turn:
     # print("POSSIBLE MOVES AT THE BEGINNING OF TURN: ", len(moves))
     # if no possible moves in this state, return None
-    print("calling plausible for AI setup")
+    # print("calling plausible for AI setup")
     if not player.plausible_moves(player.pieces, game, Depth):
         # print("WE'RE OUTTA MOVES")
         return None; # no possible move left
@@ -462,17 +482,18 @@ def AI_Player(player, game):
     # copy current game info into a BoardState to be used within ab search:
     game_copy = copy.deepcopy(game)
     state = BoardState(game_copy)
-    print("PIECES AFTER BOARDSTATE: ", len(state.to_move.pieces))
-    print("calling ab search")
+    # print("PIECES AFTER BOARDSTATE: ", len(state.to_move.pieces))
+    # print("calling ab search")
     # perform alphabeta search and return a useful move
-    return alphabeta_search(state, 2, None, None)
+    return alphabeta_search(state, 2, None, None, start_time)
 
-def alphabeta_search(state, d=1, cutoff_test=None, eval_fn=None):
+def alphabeta_search(state, d=1, cutoff_test=None, eval_fn=None, start_time=None):
     """Search game to determine best action; use alpha-beta pruning.
     This version cuts off search and uses an evaluation function."""
     global count
     global testing
     global BigInitialValue
+    global MoveTimes
     
     player = state.to_move
     count = 0
@@ -573,7 +594,11 @@ def alphabeta_search(state, d=1, cutoff_test=None, eval_fn=None):
     action, state = argmax(state.game.successors(state),
                            # lambda ((a, s)): right_value(s, -BigInitialValue, BigInitialValue, 0))
                             lambda a_s: right_value(a_s[1], -BigInitialValue, BigInitialValue, 0))
-    print("Final count: ", count)
+    # print("Final count: ", count)
+    # calculate move time, round to 2 decimal places
+    MoveTimes.append(round(time.time() - start_time, 2))
+    # print("Move time:", MoveTimes[-1])
+    # print(MoveTimes)
     return action
 
 class BoardState:
@@ -612,9 +637,13 @@ def play_blokus(blokus):
 def multi_run(repeat, one, two):
     # Scores for each player
     winner = {1: 0, 2: 0};
+    TotalMoveTimes = []
 
     # Play as many games as indicated by param repeat
     for i in range(repeat):
+        print("\nGame", (i + 1), ": Begin!\n")
+        global MoveTimes
+        MoveTimes = [] # Reset
         order = []; # Reset
         P1 = Player(1, one) # first player
         P2 = Player(2, two) # second player
@@ -637,10 +666,69 @@ def multi_run(repeat, one, two):
         for player in plist:
             print("Player "+ str(player.id) + ": "+ str(player.score));
         print("Game end.");
+        TotalMoveTimes.append(MoveTimes)
+
+    # these are used to calculate stats across all games
+    averages = []
+    averages_after_two = []
+    slowests = []
+    fastests = []
+    outcome_switcher = {
+        1: "W",
+        0: "T",
+        -1: "L"
+    }
+
+
+    if len(TotalMoveTimes) > 1:
+        # print each individual game's stats
+        print("\n========================= TIME ANALYSIS =========================")
+        for game in TotalMoveTimes:
+            # this line should include the outcome
+            outcome_number = Outcomes[TotalMoveTimes.index(game)]
+            outcome_letter = outcome_switcher.get(outcome_number)
+            print("\nGame " + str(TotalMoveTimes.index(game) + 1) + " (" + outcome_letter + ")")
+            print("Move Times:", game)
+            average = round(np.mean(game), 2)
+            averages.append(average)
+            print("Average Move Time: ", average)
+            average_after_two = round(np.mean(game[2:]), 2)
+            averages_after_two.append(average_after_two)
+            print("    After 2 Moves: ", average_after_two)
+            slowest = np.amax(game)
+            slowests.append(slowest)
+            print("Slowest Move:      ", slowest)
+            fastest = np.amin(game)
+            fastests.append(fastest)
+            print("Fastest Move:      ", fastest)
+
+    # print stats over all games
+    # include infor about depth, MTC
+    # DON'T FORGET TO NOTE OUTCOMES
+    print("\n================== STATISTICS ACROSS ALL GAMES ==================\n")
+    # print(TotalMoveTimes)
+    # print("Game", (TotalMoveTimes.index(game) + 1))
+    # print("Move Times:", game)
+    print("Depth:             ", Depth)
+    print("MovesToConsider:   ", MovesToConsider)
+    games_played = len(Outcomes)
+    print("Games Played:      ", games_played)
+    games_won = Outcomes.count(1)
+    print("Games Won:         ", games_won)
+    print("Games Lost:        ", Outcomes.count(-1))
+    print("Games Tied:        ", Outcomes.count(0))
+    print("Win Rate:          " + str(round((games_won / games_played * 100), 2)) + "%\n")
+
+    print("Average Move Time: ", round(np.mean(averages), 2))
+    print("    After 2 Moves: ", round(np.mean(averages_after_two), 2))
+    print("Slowest Move:      ", np.amax(slowests))
+    print("  Average Slowest: ", round(np.mean(slowests), 2))
+    print("Fastest Move:      ", np.amin(fastests))
+    print("  Average Fastest: ", round(np.mean(fastests), 2), "\n")
 
 def main():
     # multi_run(1, Random_Player, Random_Player);
-    multi_run(1, Random_Player, AI_Player);
+    multi_run(Games, Random_Player, AI_Player);
     # TODO(blokusUI) You need to change this a lot. The player needs to have
     # some sort of while loop here controlling their play. I'd
     # recommend printing out their available pieces, their available corners
@@ -648,7 +736,7 @@ def main():
     # board logic.
     # Actually, what I'd recommend is following the layout of Random_Player.
     # Just do a lot of input prompts there and you only really need to let the
-    # player act when they're choosing their piece anyways. 
+    # player act when they're choosing their piece anyways.
 
 
 if __name__ == '__main__':
