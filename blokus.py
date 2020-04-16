@@ -271,8 +271,6 @@ def play_blokus(blokus):
     
     while blokus.winner() is None:
         blokus.play()
-        #render(blokus.board.state)
-        #blokus.board.print_board();
         for player in blokus.players:
             print("Player "+ str(player.id) + " score "+ str(player.score) + ": "
                   + str([sh.id for sh in player.pieces]));
@@ -313,6 +311,7 @@ def multi_run(repeat, one, two):
         for player in plist:
             print("Player "+ str(player.id) + ": "+ str(player.score));
         print("Game end.");
+        clearGUI()
 
 def main():
     multi_run(1, Random_Player, Random_Player);
