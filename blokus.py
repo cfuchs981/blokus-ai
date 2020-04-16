@@ -324,7 +324,6 @@ def main():
     # Just do a lot of input prompts there and you only really need to let the
     # player act when they're choosing their piece anyways. 
 
-
 if __name__ == '__main__':
     main();
 
