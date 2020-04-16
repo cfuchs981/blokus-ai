@@ -310,6 +310,7 @@ class Blokus:
                     # update the board and the player status
                     self.board.update(current.id, proposal.points);
                     current.update_player(proposal, self.board);
+                    render(self.board.state)
                     current.remove_piece(proposal); # remove used piece
                 else: # end the game if an invalid move is proposed
                     raise Exception("Invalid move by player "+ str(current.id));
@@ -624,12 +625,11 @@ def play_blokus(blokus):
     
     while blokus.winner() is None:
         blokus.play()
-        render(blokus.board.state)
-        #blokus.board.print_board();
         for player in blokus.players:
             print("Player "+ str(player.id) + " score "+ str(player.score) + ": "
                   + str([sh.id for sh in player.pieces]));
         print('=================================================================');
+    #clearGUI()
 
 
 # Run a blokus game with two players.
@@ -725,6 +725,7 @@ def multi_run(repeat, one, two):
     print("  Average Slowest: ", round(np.mean(slowests), 2))
     print("Fastest Move:      ", np.amin(fastests))
     print("  Average Fastest: ", round(np.mean(fastests), 2), "\n")
+        clearGUI()
 
 def main():
     # multi_run(1, Random_Player, Random_Player);
@@ -737,7 +738,6 @@ def main():
     # Actually, what I'd recommend is following the layout of Random_Player.
     # Just do a lot of input prompts there and you only really need to let the
     # player act when they're choosing their piece anyways.
-
 
 if __name__ == '__main__':
     main();

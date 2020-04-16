@@ -63,5 +63,7 @@ def render(board):
     
     # Update the display
     pygame.display.flip()
-    
-    
+
+def clearGUI():
+    screen.fill((255, 255, 255))
+    pygame.display.flip()
