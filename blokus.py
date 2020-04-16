@@ -160,6 +160,53 @@ class Player:
                                     visited.append(set(candidate.points));
         return placements;
 
+    # return the number of all possible placements
+    def possible_count(self, pieces, game):
+        # Updates the corners of the player, in case the
+        # corners have been covered by another player's pieces.
+        self.corners = set([(x, y) for(x, y) in self.corners
+                            if game.board.state[y][x] == '_']);
+        counter = 0
+        visited = [] # a list placements (a set of points on board)
+
+        # Check every available corners
+        for cr in self.corners:
+            # Check every available pieces
+            for sh in pieces:
+                # Check every reference point the piece could have.
+                for num in range(sh.size):
+                    # Check every flip
+                    for flip in ["h", "v"]:
+                        # Check every rotation
+                        for rot in [0, 90, 180, 270]:
+                            # Create a copy to prevent an overwrite on the original
+                            sh.create(num, cr);
+                            sh.flip(flip);
+                            sh.rotate(rot);
+                            # If the placement is valid and new
+                            if game.valid_move(self, sh.points):
+                                if not set(sh.points) in visited:
+                                    counter += 1;
+                                    visited.append(set(sh.points));
+        return counter;
+
+    # Get a list of up to cutoff plausible placements
+    def plausible_moves(self, pieces, game, cutoff):
+        # why not just use possible_moves on individual pieces?
+        placements = []
+        for piece in pieces:
+            possibles = self.possible_moves([piece], game)
+            # print(" Possibles: ", possibles)
+            # print(possibles != [])
+            if possibles != []:
+                for possible in possibles:
+                    placements.append(possible)
+                    if len(placements) == cutoff:
+                        print("cutoff reached! returning ", placements)
+                        return placements
+        print("cutoff NOT reached! returning ", placements)
+        return placements
+
     # Get the next move based off of the player's strategy
     def next_move(self, game):
         return self.strategy(self, game);
@@ -261,9 +308,7 @@ class Blokus:
 
     def make_move(self, move, state):
         "Return a new BoardState reflecting move made from given board state."
-        # NOTE: BoardState used to have a '_moves" attribute to hold possible moves so that costly possible_moves() didn't have to be called in terminal_test, utility, etc. In each of these functions, possible moves could be accessed directly via state._moves instead of calling possible_moves(), which made them much more efficient.
-        # The problem with that was that, when making a copy 'newboard' and updating it to reflect the state of the game post-move using this function, possible_moves() has to be called here to update _moves for newboard. This function gets called a LOT, so calling possible_moves() every time slows things down to an unreasonable extent.
-        # To account for this, I got rid of BoardState's '_moves' attribute. This allows make_move to run without calling possible_moves(), but also requires terminal_test, utility, etc. to call the costly possible_moves() function every time they execute. Which I think is not as bad, but still incredibly slow.
+        # make a copy of the given state to be updated
         newboard = copy.deepcopy(state)
         current = newboard.to_move; # get current player
 
@@ -279,55 +324,34 @@ class Blokus:
 
     def successors(self, state):
         "Return a list of legal (move, state) pairs."
-        # NOTE: ideally, this would look at all possible moves and return (move, state) pairs for every single one of them. However, this causes alphabeta stuff to scale out of control, as I haven't been able to find a way to make some the needed functions (utility, make_move, terminal_test, and this function) fast enough for that to be feasible.
-        # The approach was to define a global constant MovesToConsider that represents the number of successors we actually want to return, knowing that we can't return all of them (there are often hundreds).
-        # I was hoping to slowly start increasing MTC until the average move time got out of hand, but I'm finding that it takes ~40 seconds just to consider 2 moves.
-
-        # VARIABLE VERSION: find and return all possible moves as successors
-        legal_possible_moves = state.to_move.possible_moves(state.to_move.pieces, state.game)
-        # print("there are ", len(legal_possible_moves), " legal plausible moves")
-        succ = legal_possible_moves[:MovesToConsider]
-        # print("we're only gonna try making ", len(succ), " of them")
+        # find and return up to MovesToConsider possible moves as successors
         m = [(move, self.make_move(move, state))
-            for move in succ]
+                for move in state.to_move.plausible_moves(state.to_move.pieces, state.game, MovesToConsider)]
         return m
-
-        # try out the original version by commenting out the blobk above and uncommenting the block below
-
-        # # ORIGINAL VERSION: find and return all possible moves as successors
-        # # this takes an unreasonably long time. like, hours.
-        # legal_possible_moves = state.to_move.possible_moves(state.to_move.pieces, state.game)
-        # m = [(move, self.make_move(move, state))
-        #         for move in legal_possible_moves]
-        # return m
 
     def terminal_test(self, state):
         "Return True if this is a final state for the game."
         # if we have no moves left, it's apparently (effectively) a final state
         # print("we're in terminal test")
-        return not state.to_move.possible_moves(state.to_move.pieces, state.game)
+        return not state.to_move.plausible_moves(state.to_move.pieces, state.game, 1)
 
     # gets called in ab search on new states
     def utility(self, state):
         "This is where your utility function gets called."
-        # NOTE: this is currently the complexity I'm shooting for. Any less than this and it's really just a slightly-strategized random player, and nothing close to what alphabeta_search should be capable of
-        # For this to truly be effective, we've got to be able to consider a lot of options quickly. Right now we can only consider like 2, which by default are picked from among the largest pieces first. This is usually enough to beat a random player. There are instances, however, where it may be better to play a smaller piece even though large pieces are available, but bc we only consider the largest pieces first, this might never do that.
-        # it may be near-impossible to consider every single successor for every single move, but if we can get the number from 2 up to something even a little better (say 12), we might be able to program it to intelligently select those 12 moves from a variety of different pieces (rather than just 2 of the largest ones), which may be enough to make this thing a decent player.
-
         # print("starting utility")
         current = state.to_move
-        current_possibles = current.possible_moves(current.pieces, state.game)
+        current_possibles = current.possible_count(current.pieces, state.game)
         opponent = state.game.players[1]
         # start total at 89
         total = TotalStartingSize
         # count the number of squares in all remaining pieces
         for p in current.pieces:
             # subtract current remaining squares from initial 89
-            # less pieces => higher utility
+            # less pieces in hand => higher utility
             total -= p.size
 
         # if there's only one piece left and we can play it
-        if len(current.pieces) == 1 and current_possibles != []:
+        if len(current.pieces) == 1 and current_possibles > 0:
             # if it's the monomino, add 20 bonus points
             if current.pieces[0].size == 1:
                 total += 20
@@ -336,9 +360,12 @@ class Blokus:
                 total += 15
         
         # add a point for every possible move we have
-        total += len(current_possibles)
+        # print("possible moves: ", current_possibles)
+        total += current_possibles
         # subtract a point for every possible move our opponent has
-        total -= len(opponent.possible_moves(opponent.pieces, state.game))
+        # print("pre-opponent total: ", total)
+        total -= opponent.possible_count(opponent.pieces, state.game)
+        # print("post-opponent total: ", total)
         # print("returning utility")
         return total
 
@@ -356,19 +383,19 @@ def Random_Player(player, game):
 
 # AI Strategy: choose a move based on utility
 def AI_Player(player, game):
+    print("starting AI player")
     # note: this was programmed such that AI is always P2
     # the following will execute every time it's our turn:
-    moves = player.possible_moves(player.pieces, game)
     # print("POSSIBLE MOVES AT THE BEGINNING OF TURN: ", len(moves))
     # if no possible moves in this state, return None
-    if len(moves) <= 0:
+    if not player.plausible_moves(player.pieces, game, 1):
         # print("WE'RE OUTTA MOVES")
         return None; # no possible move left
 
     # copy current game info into a BoardState to be used within ab search:
     game_copy = copy.deepcopy(game)
     state = BoardState(game_copy)
-
+    print("calling ab search")
     # perform alphabeta search and return a useful move
     return alphabeta_search(state, 1, None, None)
 
