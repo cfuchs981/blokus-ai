@@ -230,6 +230,7 @@ class Blokus:
                     # update the board and the player status
                     self.board.update(current.id, proposal.points);
                     current.update_player(proposal, self.board);
+                    render(self.board.state)
                     current.remove_piece(proposal); # remove used piece
                 else: # end the game if an invalid move is proposed
                     raise Exception("Invalid move by player "+ str(current.id));
@@ -270,12 +271,13 @@ def play_blokus(blokus):
     
     while blokus.winner() is None:
         blokus.play()
-        render(blokus.board.state)
+        #render(blokus.board.state)
         #blokus.board.print_board();
         for player in blokus.players:
             print("Player "+ str(player.id) + " score "+ str(player.score) + ": "
                   + str([sh.id for sh in player.pieces]));
         print('=================================================================');
+    #clearGUI()
 
 
 # Run a blokus game with two players.
