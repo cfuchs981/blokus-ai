@@ -16,7 +16,7 @@ testing = 0
 BigInitialValue = 1000000
 TotalStartingSize = 89
 # change MTC to adjust the number of successor states returned
-MovesToConsider = 2
+MovesToConsider = 3
 
 # NOTE: I have some print() commands throughout my code that you can uncomment to see what's happening where
 # also give it a minute when you first hit run, it'll take about 40 seconds before anything shows up in the window or in the output
@@ -352,12 +352,12 @@ class Blokus:
 
         # if there's only one piece left and we can play it
         if len(current.pieces) == 1 and current_possibles > 0:
-            # if it's the monomino, add 20 bonus points
+            # if it's the monomino, add 2000, high priority
             if current.pieces[0].size == 1:
-                total += 20
-            # if it's any other piece, only add 15 bonus points
+                total += 2000
+            # if it's any other piece, only add 1500, also high priority
             else:
-                total += 15
+                total += 1500
         
         # add a point for every possible move we have
         # print("possible moves: ", current_possibles)
