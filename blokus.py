@@ -16,7 +16,8 @@ testing = 0
 BigInitialValue = 1000000
 TotalStartingSize = 89
 # change MTC to adjust the number of successor states returned
-MovesToConsider = 3
+MovesToConsider = 2
+Depth = 2
 
 # NOTE: I have some print() commands throughout my code that you can uncomment to see what's happening where
 # also give it a minute when you first hit run, it'll take about 40 seconds before anything shows up in the window or in the output
@@ -101,6 +102,7 @@ class Player:
         self.corners = set() # current valid corners on board
         self.strategy = strategy # player's strategy
         self.score = 0 # player's current score
+        self.is_blocked = False
 
     #Add the player's initial pieces for a game
     def add_pieces(self, pieces):
@@ -227,7 +229,15 @@ class Blokus:
     # Or return nothing if the game can still progress
     def winner(self):
         # get all possible moves for all players
-        moves = [p.possible_moves(p.pieces, self) for p in self.players];
+        # moves = [p.possible_moves(p.pieces, self) for p in self.players];
+        # print("Moves: ", moves)
+        moves = []
+        for p in self.players:
+            possibles = p.possible_moves(p.pieces, self)
+            if possibles == []:
+                p.is_blocked = True
+            moves.append(possibles)
+        print("Moves: ", moves)
         # print("Winner has found ", moves)
 
         # check how many rounds the total available moves from all players
@@ -338,10 +348,11 @@ class Blokus:
     # gets called in ab search on new states
     def utility(self, state):
         "This is where your utility function gets called."
-        # print("starting utility")
+        print("starting utility")
+        # get current player
         current = state.to_move
-        current_possibles = current.possible_count(current.pieces, state.game)
-        opponent = state.game.players[1]
+        print("CURRENT ID: ", current.id)
+
         # start total at 89
         total = TotalStartingSize
         # count the number of squares in all remaining pieces
@@ -350,23 +361,77 @@ class Blokus:
             # less pieces in hand => higher utility
             total -= p.size
 
-        # if there's only one piece left and we can play it
-        if len(current.pieces) == 1 and current_possibles > 0:
-            # if it's the monomino, add 2000, high priority
-            if current.pieces[0].size == 1:
-                total += 2000
-            # if it's any other piece, only add 1500, also high priority
+        piece_count = len(current.pieces)
+        print("PIECE COUNT: ", piece_count)
+        # at start, utility is called on states with 21 - (depth+2) pieces
+        # blocking and finishing are impossible within the first two moves
+        # we're already motivated to play large pieces at the start
+        # skip blocking and endgame calculations on first two moves
+
+        # if we're past the first two moves
+        if piece_count <= (21 - (Depth+2) - 2):
+            opponent = state.game.players[1]
+            # if opponent has possible moves
+            if not opponent.is_blocked:
+                print("calculating blocking")
+                current_possibles = current.possible_count(current.pieces, state.game)
+                print("# of current possibles: ", current_possibles)
+                print("estimated current possibles: ", (len(current.corners) * piece_count))
+                print("is opponent blocked? ", opponent.is_blocked)
+
+                # add a point for every possible move we have
+                # print("possible moves: ", current_possibles)
+                total += current_possibles
+
+                # subtract a point for every possible move our opponent has
+                # print("pre-opponent total: ", total)
+                opponent_possibles = opponent.possible_count(opponent.pieces, state.game)
+                print("# of opponent possibles: ", opponent_possibles)
+                print("estimated opponent possibles: ", (len(opponent.corners) * len(opponent.pieces)))
+                total -= opponent_possibles
+                # print("post-opponent total: ", total)
+                # print("returning utility")
+
+                # skip endgame calculations if we don't have exactly one piece
+                if piece_count != 1:
+                    print("no endgame")
+                    return total
+                else:
+                    print("calculating endgame")
+                    # if there's only one piece left and we can play it
+                    if current_possibles > 0:
+                        # if it's the monomino, add 2000, highest priority
+                        if current.pieces[0].size == 1:
+                            total += 2000
+                        # if it's any other piece, only add 1500, also high priority
+                        else:
+                            total += 1500
+            # if opponent is completely blocked
             else:
-                total += 1500
-        
-        # add a point for every possible move we have
-        # print("possible moves: ", current_possibles)
-        total += current_possibles
-        # subtract a point for every possible move our opponent has
-        # print("pre-opponent total: ", total)
-        total -= opponent.possible_count(opponent.pieces, state.game)
-        # print("post-opponent total: ", total)
-        # print("returning utility")
+                # incentivize moves that give us more possibilities
+                current_possibles = current.possible_count(current.pieces, state.game)
+                print("# of current possibles: ", current_possibles)
+                print("estimated current possibles: ", (len(current.corners) * piece_count))
+                print("is opponent blocked? ", opponent.is_blocked)
+
+                # add a point for every possible move we have
+                # print("possible moves: ", current_possibles)
+                total += current_possibles
+                # skip endgame calculations if we don't have exactly one piece
+                if piece_count != 1:
+                    print("no endgame")
+                    return total
+                else:
+                    print("calculating endgame")
+                    # if there's only one piece left and we can play it
+                    if current_possibles > 0:
+                        # if it's the monomino, add 2000, highest priority
+                        if current.pieces[0].size == 1:
+                            total += 2000
+                        # if it's any other piece, only add 1500, also high priority
+                        else:
+                            total += 1500
+        print("returning utility ", total)
         return total
 
 # Random Strategy: choose an available piece randomly
@@ -384,20 +449,23 @@ def Random_Player(player, game):
 # AI Strategy: choose a move based on utility
 def AI_Player(player, game):
     print("starting AI player")
+    print("PIECES AT BEGINNING: ", len(player.pieces))
     # note: this was programmed such that AI is always P2
     # the following will execute every time it's our turn:
     # print("POSSIBLE MOVES AT THE BEGINNING OF TURN: ", len(moves))
     # if no possible moves in this state, return None
-    if not player.plausible_moves(player.pieces, game, 1):
+    print("calling plausible for AI setup")
+    if not player.plausible_moves(player.pieces, game, Depth):
         # print("WE'RE OUTTA MOVES")
         return None; # no possible move left
 
     # copy current game info into a BoardState to be used within ab search:
     game_copy = copy.deepcopy(game)
     state = BoardState(game_copy)
+    print("PIECES AFTER BOARDSTATE: ", len(state.to_move.pieces))
     print("calling ab search")
     # perform alphabeta search and return a useful move
-    return alphabeta_search(state, 1, None, None)
+    return alphabeta_search(state, 2, None, None)
 
 def alphabeta_search(state, d=1, cutoff_test=None, eval_fn=None):
     """Search game to determine best action; use alpha-beta pruning.
