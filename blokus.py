@@ -13,18 +13,18 @@ import operator
 import time
 import numpy as np
 
+# PERFORMANCE PARAMETERS: edit these to play with AI performance
+# change to adjust the cutoff depth for alphabeta search
+Depth = 2
+# change to adjust the number of successor states returned
+MovesToConsider = 2
+# change to adjust the number of games played
+Games = 2
+
 # used for alphabeta search
 count = 0
 testing = 0
 BigInitialValue = 1000000
-
-# PERFORMANCE PARAMETERS: edit these to play with AI performance
-# change to adjust the cutoff depth for alphabeta search
-Depth = 1
-# change to adjust the number of successor states returned
-MovesToConsider = 1
-# change to adjust the number of games played
-Games = 2
 
 # number of total squares amongst all of a player's starting pieces
 TotalStartingSize = 89
