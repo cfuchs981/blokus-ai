@@ -33,6 +33,8 @@ Games = 2
 MoveTimes = []
 Outcomes = []
 Scores = []
+PossibleCounts = []
+EstimatedCounts = []
 
 # Blokus Board
 class Board:
@@ -403,6 +405,8 @@ class Blokus:
             if not opponent.is_blocked:
                 # print("calculating blocking")
                 current_possibles = current.possible_count(current.pieces, state.game)
+                PossibleCounts.append(current_possibles)
+                EstimatedCounts.append(len(current.corners) * len(current.pieces))
                 # print("# of current possibles: ", current_possibles)
                 # print("estimated current possibles: ", (len(current.corners) * piece_count))
                 # print("is opponent blocked? ", opponent.is_blocked)
@@ -414,6 +418,8 @@ class Blokus:
                 # subtract a point for every possible move our opponent has
                 # print("pre-opponent total: ", total)
                 opponent_possibles = opponent.possible_count(opponent.pieces, state.game)
+                PossibleCounts.append(opponent_possibles)
+                EstimatedCounts.append(len(opponent.corners) * len(opponent.pieces))
                 # print("# of opponent possibles: ", opponent_possibles)
                 # print("estimated opponent possibles: ", (len(opponent.corners) * len(opponent.pieces)))
                 total -= opponent_possibles
@@ -688,6 +694,12 @@ def multi_run(repeat, one, two):
         0: "T",
         -1: "L"
     }
+    errors = []
+    # zip the possibles and estimates to get an array of % errors
+    for possible, estimate in zip(PossibleCounts, EstimatedCounts):
+        # don't divide by zero
+        if possible != 0 and estimate != 0:
+            errors.append(abs(possible - estimate)/possible)
 
     if len(TotalMoveTimes) > 1:
         # print each individual game's stats
@@ -731,7 +743,7 @@ def multi_run(repeat, one, two):
     print("Games Tied:        ", Outcomes.count(0))
     print("Win Rate:          " + str(round((games_won / games_played * 100), 2)) + "%\n")
 
-    print("Average Score:    ", round(np.mean(Scores)))
+    print("Average Score:     " + str(round(np.mean(Scores))))
     print("Highest Score:    ", np.amax(Scores))
     print("Lowest Score:     ", np.amin(Scores), "\n")
 
@@ -741,6 +753,10 @@ def multi_run(repeat, one, two):
     print("  Average Slowest: ", round(np.mean(slowests), 2))
     print("Fastest Move:      ", np.amin(fastests))
     print("  Average Fastest: ", round(np.mean(fastests), 2), "\n")
+
+    print("Average Estimate Error:   " + str(round(np.mean(errors), 4)) + "%")
+    print("Largest Estimate Error:  " + str(round(np.amax(errors), 4)) + "%")
+    print("Smallest Estimate Error:  " + str(round(np.amin(errors), 4)) + "%\n")
 
 def main():
     # multi_run(1, Random_Player, Random_Player);
