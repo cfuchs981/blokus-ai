@@ -6,18 +6,17 @@ import math
 import random
 import copy
 import piece
+from gui import *
 
 # Blokus Board
 class Board:
     def __init__(self, nrow, ncol):
         self.nrow = nrow; # total rows
         self.ncol = ncol; # total columns
-        # Fill out placeholder board with _. TODO(UI) we
-        # won't need this board after your stuff works.
+
         self.state = [['_'] * ncol for i in range(nrow)];
 
-    # Places piece on board for a coordinate. TODO(UI) may not be
-    # needed, we may be able to update our UI directly. 
+
     def update(self, player_id, placement):
         for row in range(self.nrow):
             for col in range(self.ncol):
@@ -66,15 +65,20 @@ class Board:
 
         return True in corners;
 
+    
+    '''
     # Print the current board layout
     # TODO(UI) we don't want this. This is lazy testing UI, route it into
     # something better & with colors. 
+    
     def print_board(self):
         print("Current Board Layout:");
         for row in range(len(self.state)):
             for col in range(len(self.state[0])):
                 print(" "+ str(self.state[row][col]), end = '')
             print()
+    '''
+    
 
 # Player Class
 class Player:
@@ -226,6 +230,7 @@ class Blokus:
                     # update the board and the player status
                     self.board.update(current.id, proposal.points);
                     current.update_player(proposal, self.board);
+                    render(self.board.state)
                     current.remove_piece(proposal); # remove used piece
                 else: # end the game if an invalid move is proposed
                     raise Exception("Invalid move by player "+ str(current.id));
@@ -265,12 +270,12 @@ def play_blokus(blokus):
     blokus.play();
     
     while blokus.winner() is None:
-        blokus.play();
-        blokus.board.print_board();
+        blokus.play()
         for player in blokus.players:
             print("Player "+ str(player.id) + " score "+ str(player.score) + ": "
                   + str([sh.id for sh in player.pieces]));
         print('=================================================================');
+    #clearGUI()
 
 
 # Run a blokus game with two players.
@@ -301,12 +306,14 @@ def multi_run(repeat, one, two, three, four):
         play_blokus(blokus);
 
         # End of game display.
-        blokus.board.print_board();
+        render(blokus.board.state)
+        #blokus.board.print_board();
         blokus.play();
         plist = sorted(blokus.players, key = lambda p: p.id);
         for player in plist:
             print("Player "+ str(player.id) + ": "+ str(player.score));
         print("Game end.");
+        clearGUI()
 
 def main():
     multi_run(1, Random_Player, Random_Player, Random_Player, Random_Player);
@@ -318,7 +325,6 @@ def main():
     # Actually, what I'd recommend is following the layout of Random_Player.
     # Just do a lot of input prompts there and you only really need to let the
     # player act when they're choosing their piece anyways. 
-
 
 if __name__ == '__main__':
     main();
