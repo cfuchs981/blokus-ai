@@ -15,11 +15,11 @@ import numpy as np
 
 # PERFORMANCE PARAMETERS: edit these to play with AI performance
 # change to adjust the cutoff depth for alphabeta search
-Depth = 2
+Depth = 1
 # change to adjust the number of successor states returned
-MovesToConsider = 2
+MovesToConsider = 1
 # change to adjust the number of games played
-Games = 10
+Games = 1
 
 # used for alphabeta search
 count = 0
@@ -741,7 +741,7 @@ def multi_run(repeat, one, two):
         if possible != 0 and estimate != 0:
             errors.append(abs(possible - estimate)/possible)
 
-    if len(TotalMoveTimes) > 1:
+    if len(TotalMoveTimes) > 0:
         # print each individual game's stats
         print("\n========================= TIME ANALYSIS =========================")
         for game in TotalMoveTimes:
