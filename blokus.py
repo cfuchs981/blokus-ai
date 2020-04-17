@@ -19,7 +19,7 @@ Depth = 2
 # change to adjust the number of successor states returned
 MovesToConsider = 2
 # change to adjust the number of games played
-Games = 10
+Games = 1
 
 # used for alphabeta search
 count = 0
@@ -414,9 +414,20 @@ class Blokus:
             # if opponent has possible moves
             if not opponent.is_blocked:
                 # print("calculating blocking")
-                current_possibles = current.possible_count(current.pieces, state.game)
-                PossibleCounts.append(current_possibles)
-                EstimatedCounts.append(len(current.corners) * len(current.pieces))
+
+                # this should be active when using possible_moves
+                # current_possibles = current.possible_count(current.pieces, state.game)
+
+                # the following code is needed for analysis
+                # PossibleCounts.append(current_possibles)
+                # EstimatedCounts.append(len(current.corners) * len(current.pieces))
+
+                # NOTE THIS AN ESTIMATE, NOT ACTUALLY CURRENT_POSSIBLES
+                # we're just doing that so we don't have to rename everything yet
+                # corners * possibles is accrate within 10% on average
+                # other options?
+                current_possibles = len(current.corners) * piece_count
+                
                 # print("# of current possibles: ", current_possibles)
                 # print("estimated current possibles: ", (len(current.corners) * piece_count))
                 # print("is opponent blocked? ", opponent.is_blocked)
@@ -427,9 +438,14 @@ class Blokus:
 
                 # subtract a point for every possible move our opponent has
                 # print("pre-opponent total: ", total)
-                opponent_possibles = opponent.possible_count(opponent.pieces, state.game)
-                PossibleCounts.append(opponent_possibles)
-                EstimatedCounts.append(len(opponent.corners) * len(opponent.pieces))
+                # opponent_possibles = opponent.possible_count(opponent.pieces, state.game)
+                
+                # NOTE NOT ACTUALLY POSSIBLES, JUST AN ESTIMATE, SEE ABOVE
+                opponent_possibles = len(opponent.corners) * len(opponent.pieces)
+
+                # PossibleCounts.append(opponent_possibles)
+                # EstimatedCounts.append(len(opponent.corners) * len(opponent.pieces))
+
                 # print("# of opponent possibles: ", opponent_possibles)
                 # print("estimated opponent possibles: ", (len(opponent.corners) * len(opponent.pieces)))
                 total -= opponent_possibles
@@ -442,8 +458,8 @@ class Blokus:
                     return total
                 else:
                     # print("calculating endgame")
-                    # if there's only one piece left and we can play it
-                    if current_possibles > 0:
+                    # if there's only one piece left and there is a possible move
+                    if len(current.plausible_moves(current.pieces, state.game, 1)) > 0:
                         # if it's the monomino, add 2000, highest priority
                         if current.pieces[0].size == 1:
                             total += 2000
@@ -453,7 +469,11 @@ class Blokus:
             # if opponent is completely blocked
             else:
                 # incentivize moves that give us more possibilities
-                current_possibles = current.possible_count(current.pieces, state.game)
+                # current_possibles = current.possible_count(current.pieces, state.game)
+                
+                # NOTE: NOT ACTUAL POSSIBLES, JUST AN ESTIMATE, SEE ABOVE
+                current_possibles = len(current.corners) * piece_count
+
                 # print("# of current possibles: ", current_possibles)
                 # MARKER uncomment these for estimates
                 # print("estimated current possibles: ", (len(current.corners) * piece_count))
@@ -468,8 +488,8 @@ class Blokus:
                     return total
                 else:
                     # print("calculating endgame")
-                    # if there's only one piece left and we can play it
-                    if current_possibles > 0:
+                    # if there's only one piece left and there is a possible move
+                    if len(current.plausible_moves(current.pieces, state.game, 1)) > 0:
                         # if it's the monomino, add 2000, highest priority
                         if current.pieces[0].size == 1:
                             total += 2000
@@ -735,11 +755,13 @@ def multi_run(repeat, one, two):
         -1: "L"
     }
     errors = []
-    # zip the possibles and estimates to get an array of % errors
-    for possible, estimate in zip(PossibleCounts, EstimatedCounts):
-        # don't divide by zero
-        if possible != 0 and estimate != 0:
-            errors.append(abs(possible - estimate)/possible)
+
+    # this should be active to get estimate stats
+    # # zip the possibles and estimates to get an array of % errors
+    # for possible, estimate in zip(PossibleCounts, EstimatedCounts):
+    #     # don't divide by zero
+    #     if possible != 0 and estimate != 0:
+    #         errors.append(abs(possible - estimate)/possible)
 
     if len(TotalMoveTimes) > 1:
         # print each individual game's stats
@@ -794,13 +816,13 @@ def multi_run(repeat, one, two):
     print("Fastest Move:      ", np.amin(fastests))
     print("  Average Fastest: ", round(np.mean(fastests), 2), "\n")
 
-    print("Average Estimate Error:   " + str(round(np.mean(errors), 4)) + "%")
-    print("Largest Estimate Error:  " + str(round(np.amax(errors), 4)) + "%")
-    print("Smallest Estimate Error:  " + str(round(np.amin(errors), 4)) + "%\n")
+    # print("Average Estimate Error:   " + str(round(np.mean(errors), 4)) + "%")
+    # print("Largest Estimate Error:  " + str(round(np.amax(errors), 4)) + "%")
+    # print("Smallest Estimate Error:  " + str(round(np.amin(errors), 4)) + "%\n")
 
 def main():
     # multi_run(1, Random_Player, Random_Player);
-    multi_run(Games, Largest_Player, AI_Player);
+    multi_run(Games, Random_Player, AI_Player);
     # TODO(blokusUI) You need to change this a lot. The player needs to have
     # some sort of while loop here controlling their play. I'd
     # recommend printing out their available pieces, their available corners
