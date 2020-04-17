@@ -13,21 +13,27 @@ import operator
 import time
 import numpy as np
 
+# used for alphabeta search
 count = 0
 testing = 0
 BigInitialValue = 1000000
+
+# number of total squares amongst all of a player's starting pieces
 TotalStartingSize = 89
-# change MTC to adjust the number of successor states returned
-MovesToConsider = 1
+
+# VARIABLE VARIABLES: edit these to play with AI performance
+# change to adjust the cutoff depth for alphabeta search
 Depth = 1
-MoveTimes = []
-Outcomes = []
+# change to adjust the number of successor states returned
+MovesToConsider = 1
+# change to adjust the number of games played
 Games = 2
 
-# NOTE: I have some print() commands throughout my code that you can uncomment to see what's happening where
-# also give it a minute when you first hit run, it'll take about 40 seconds before anything shows up in the window or in the output
+# used for analyzing AI performance
+MoveTimes = []
+Outcomes = []
+Scores = []
 
-# Board class works fine, proabbly irrelevant to AI troubleshooting
 # Blokus Board
 class Board:
     def __init__(self, nrow, ncol):
@@ -328,6 +334,10 @@ class Blokus:
                 # -1 represents a human win
                 else:
                     Outcomes.append(-1)
+                # score
+                for player in self.players:
+                    if player.id == 2:
+                        Scores.append(player.score)
                 print('Game over! The winner is: '+ str(winner[0]));
             else: # if the game results in a tie
                 # 0 represents a tie
@@ -629,7 +639,6 @@ def play_blokus(blokus):
             print("Player "+ str(player.id) + " score "+ str(player.score) + ": "
                   + str([sh.id for sh in player.pieces]));
         print('=================================================================');
-    #clearGUI()
 
 
 # Run a blokus game with two players.
@@ -666,6 +675,7 @@ def multi_run(repeat, one, two):
         for player in plist:
             print("Player "+ str(player.id) + ": "+ str(player.score));
         print("Game end.");
+        clearGUI()
         TotalMoveTimes.append(MoveTimes)
 
     # these are used to calculate stats across all games
@@ -679,15 +689,16 @@ def multi_run(repeat, one, two):
         -1: "L"
     }
 
-
     if len(TotalMoveTimes) > 1:
         # print each individual game's stats
         print("\n========================= TIME ANALYSIS =========================")
         for game in TotalMoveTimes:
             # this line should include the outcome
-            outcome_number = Outcomes[TotalMoveTimes.index(game)]
+            game_index = TotalMoveTimes.index(game)
+            outcome_number = Outcomes[game_index]
             outcome_letter = outcome_switcher.get(outcome_number)
-            print("\nGame " + str(TotalMoveTimes.index(game) + 1) + " (" + outcome_letter + ")")
+            score = Scores[game_index]
+            print("\nGame " + str(game_index + 1) + " (" + outcome_letter + ", " + str(score) + ")")
             print("Move Times:", game)
             average = round(np.mean(game), 2)
             averages.append(average)
@@ -710,7 +721,8 @@ def multi_run(repeat, one, two):
     # print("Game", (TotalMoveTimes.index(game) + 1))
     # print("Move Times:", game)
     print("Depth:             ", Depth)
-    print("MovesToConsider:   ", MovesToConsider)
+    print("MovesToConsider:   ", MovesToConsider, "\n")
+
     games_played = len(Outcomes)
     print("Games Played:      ", games_played)
     games_won = Outcomes.count(1)
@@ -719,13 +731,16 @@ def multi_run(repeat, one, two):
     print("Games Tied:        ", Outcomes.count(0))
     print("Win Rate:          " + str(round((games_won / games_played * 100), 2)) + "%\n")
 
+    print("Average Score:    ", round(np.mean(Scores)))
+    print("Highest Score:    ", np.amax(Scores))
+    print("Lowest Score:     ", np.amin(Scores), "\n")
+
     print("Average Move Time: ", round(np.mean(averages), 2))
     print("    After 2 Moves: ", round(np.mean(averages_after_two), 2))
     print("Slowest Move:      ", np.amax(slowests))
     print("  Average Slowest: ", round(np.mean(slowests), 2))
     print("Fastest Move:      ", np.amin(fastests))
     print("  Average Fastest: ", round(np.mean(fastests), 2), "\n")
-        clearGUI()
 
 def main():
     # multi_run(1, Random_Player, Random_Player);
