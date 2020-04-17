@@ -20,14 +20,16 @@ BigInitialValue = 1000000
 
 # number of total squares amongst all of a player's starting pieces
 TotalStartingSize = 89
+# number of pieces per player at the start of the game
+TotalStartingPieces = 21
 
 # VARIABLE VARIABLES: edit these to play with AI performance
 # change to adjust the cutoff depth for alphabeta search
-Depth = 1
+Depth = 2
 # change to adjust the number of successor states returned
-MovesToConsider = 1
+MovesToConsider = 2
 # change to adjust the number of games played
-Games = 2
+Games = 10
 
 # used for analyzing AI performance
 MoveTimes = []
@@ -342,6 +344,10 @@ class Blokus:
                         Scores.append(player.score)
                 print('Game over! The winner is: '+ str(winner[0]));
             else: # if the game results in a tie
+                # score
+                for player in self.players:
+                    if player.id == 2:
+                        Scores.append(player.score)
                 # 0 represents a tie
                 Outcomes.append(0)
                 print('Game over! Tied between players: '+ ', '.join(map(str, winner)));
@@ -372,13 +378,12 @@ class Blokus:
     def terminal_test(self, state):
         "Return True if this is a final state for the game."
         # if we have no moves left, it's apparently (effectively) a final state
-        # print("we're in terminal test")
         return not state.to_move.plausible_moves(state.to_move.pieces, state.game, 1)
 
     # gets called in ab search on new states
-    def utility(self, state):
+    def utility(self, state, turn_number):
         "This is where your utility function gets called."
-        # print("starting utility")
+        print("starting utility")
         # get current player
         current = state.to_move
         # print("CURRENT ID: ", current.id)
@@ -398,8 +403,10 @@ class Blokus:
         # we're already motivated to play large pieces at the start
         # skip blocking and endgame calculations on first two moves
 
+        # NOTE: need a different way to determine this
         # if we're past the first two moves
-        if piece_count <= (21 - (Depth+2) - 2):
+        if turn_number > 2:
+            # print("PAST FIRST TWO MOVES")
             opponent = state.game.players[1]
             # if opponent has possible moves
             if not opponent.is_blocked:
@@ -428,7 +435,7 @@ class Blokus:
 
                 # skip endgame calculations if we don't have exactly one piece
                 if piece_count != 1:
-                    # print("no endgame")
+                    print("no endgame, returning", total)
                     return total
                 else:
                     # print("calculating endgame")
@@ -454,7 +461,7 @@ class Blokus:
                 total += current_possibles
                 # skip endgame calculations if we don't have exactly one piece
                 if piece_count != 1:
-                    # print("no endgame")
+                    print("no endgame, returning", total)
                     return total
                 else:
                     # print("calculating endgame")
@@ -466,7 +473,7 @@ class Blokus:
                         # if it's any other piece, only add 1500, also high priority
                         else:
                             total += 1500
-        # print("returning utility ", total)
+        print("returning utility ", total)
         return total
 
 # Random Strategy: choose an available piece randomly
@@ -484,6 +491,9 @@ def Random_Player(player, game):
 # AI Strategy: choose a move based on utility
 def AI_Player(player, game):
     start_time = time.time()
+    # determine what turn we're on
+    turn_number = (TotalStartingPieces - len(player.pieces) + 1)
+
     # print("HEY ", start_time)
     # print("starting AI player")
     # print("PIECES AT BEGINNING: ", len(player.pieces))
@@ -492,7 +502,7 @@ def AI_Player(player, game):
     # print("POSSIBLE MOVES AT THE BEGINNING OF TURN: ", len(moves))
     # if no possible moves in this state, return None
     # print("calling plausible for AI setup")
-    if not player.plausible_moves(player.pieces, game, Depth):
+    if not player.plausible_moves(player.pieces, game, 1):
         # print("WE'RE OUTTA MOVES")
         return None; # no possible move left
 
@@ -502,9 +512,9 @@ def AI_Player(player, game):
     # print("PIECES AFTER BOARDSTATE: ", len(state.to_move.pieces))
     # print("calling ab search")
     # perform alphabeta search and return a useful move
-    return alphabeta_search(state, 2, None, None, start_time)
+    return alphabeta_search(state, Depth, None, None, start_time, turn_number)
 
-def alphabeta_search(state, d=1, cutoff_test=None, eval_fn=None, start_time=None):
+def alphabeta_search(state, d=1, cutoff_test=None, eval_fn=None, start_time=None, turn_number=None):
     """Search game to determine best action; use alpha-beta pruning.
     This version cuts off search and uses an evaluation function."""
     global count
@@ -604,7 +614,7 @@ def alphabeta_search(state, d=1, cutoff_test=None, eval_fn=None, start_time=None
     # The default test cuts off at depth d or at a terminal state
     cutoff_test = (cutoff_test or
                    (lambda state,depth: depth>d or state.game.terminal_test(state)))
-    eval_fn = eval_fn or (lambda state: state.game.utility(state))
+    eval_fn = eval_fn or (lambda state: state.game.utility(state, turn_number))
     # TODO: revert this
     # test = state.game.successors(state)
     # print(test)
@@ -614,7 +624,7 @@ def alphabeta_search(state, d=1, cutoff_test=None, eval_fn=None, start_time=None
     # print("Final count: ", count)
     # calculate move time, round to 2 decimal places
     MoveTimes.append(round(time.time() - start_time, 2))
-    # print("Move time:", MoveTimes[-1])
+    print("Move time:", MoveTimes[-1])
     # print(MoveTimes)
     return action
 
