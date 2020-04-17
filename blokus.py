@@ -18,18 +18,18 @@ count = 0
 testing = 0
 BigInitialValue = 1000000
 
+# PERFORMANCE PARAMETERS: edit these to play with AI performance
+# change to adjust the cutoff depth for alphabeta search
+Depth = 1
+# change to adjust the number of successor states returned
+MovesToConsider = 1
+# change to adjust the number of games played
+Games = 2
+
 # number of total squares amongst all of a player's starting pieces
 TotalStartingSize = 89
 # number of pieces per player at the start of the game
 TotalStartingPieces = 21
-
-# VARIABLE VARIABLES: edit these to play with AI performance
-# change to adjust the cutoff depth for alphabeta search
-Depth = 2
-# change to adjust the number of successor states returned
-MovesToConsider = 2
-# change to adjust the number of games played
-Games = 10
 
 # used for analyzing AI performance
 MoveTimes = []
@@ -245,13 +245,14 @@ class Blokus:
     # Check for the winner (or tied) in the game and return the winner's id.
     # Or return nothing if the game can still progress
     def winner(self):
+        # print("starting winner")
         # get all possible moves for all players
         # moves = [p.possible_moves(p.pieces, self) for p in self.players];
         # print("Moves: ", moves)
         moves = []
         for p in self.players:
-            possibles = p.possible_moves(p.pieces, self)
-            if possibles == []:
+            possibles = p.possible_count(p.pieces, self)
+            if possibles == 0:
                 p.is_blocked = True
             moves.append(possibles)
         #print("Moves: ", moves)
@@ -259,15 +260,16 @@ class Blokus:
 
         # check how many rounds the total available moves from all players
         # are the same and increment the counter if so
-        if self.previous == sum([len(mv) for mv in moves]):
+        if self.previous == sum([mv for mv in moves]):
             self.repeat += 1;
         else:
             self.repeat = 0;
 
         # if there is still moves possible or total available moves remain
         # static for too many rounds (repeat reaches over a certain threshold)
-        if False in[len(mv) == 0 for mv in moves] and self.repeat < 4:
-            self.previous = sum([len(mv) for mv in moves]);
+        if False in[mv == 0 for mv in moves] and self.repeat < 4:
+            self.previous = sum([mv for mv in moves]);
+            # print("returning winner")
             return None; # Nothing to return to continue the game
         else: # No more move available, the game ends
             # order the players by highest score first
@@ -278,6 +280,7 @@ class Blokus:
             for candidate in candidates[1:]: # check for tied score
                 if highest == candidate[0]:
                     result += [candidate[1]];
+            # print("returning winner")
             return result # get all the highest score players
 
     # Check if a player's move is valid, including board bounds, pieces' overlap,
@@ -383,7 +386,7 @@ class Blokus:
     # gets called in ab search on new states
     def utility(self, state, turn_number):
         "This is where your utility function gets called."
-        print("starting utility")
+        # print("starting utility")
         # get current player
         current = state.to_move
         # print("CURRENT ID: ", current.id)
@@ -435,7 +438,7 @@ class Blokus:
 
                 # skip endgame calculations if we don't have exactly one piece
                 if piece_count != 1:
-                    print("no endgame, returning", total)
+                    # print("no endgame, returning", total)
                     return total
                 else:
                     # print("calculating endgame")
@@ -461,7 +464,7 @@ class Blokus:
                 total += current_possibles
                 # skip endgame calculations if we don't have exactly one piece
                 if piece_count != 1:
-                    print("no endgame, returning", total)
+                    # print("no endgame, returning", total)
                     return total
                 else:
                     # print("calculating endgame")
@@ -473,7 +476,7 @@ class Blokus:
                         # if it's any other piece, only add 1500, also high priority
                         else:
                             total += 1500
-        print("returning utility ", total)
+        # print("returning utility ", total)
         return total
 
 # Random Strategy: choose an available piece randomly
@@ -493,7 +496,6 @@ def AI_Player(player, game):
     start_time = time.time()
     # determine what turn we're on
     turn_number = (TotalStartingPieces - len(player.pieces) + 1)
-
     # print("HEY ", start_time)
     # print("starting AI player")
     # print("PIECES AT BEGINNING: ", len(player.pieces))
@@ -501,7 +503,6 @@ def AI_Player(player, game):
     # the following will execute every time it's our turn:
     # print("POSSIBLE MOVES AT THE BEGINNING OF TURN: ", len(moves))
     # if no possible moves in this state, return None
-    # print("calling plausible for AI setup")
     if not player.plausible_moves(player.pieces, game, 1):
         # print("WE'RE OUTTA MOVES")
         return None; # no possible move left
@@ -624,7 +625,7 @@ def alphabeta_search(state, d=1, cutoff_test=None, eval_fn=None, start_time=None
     # print("Final count: ", count)
     # calculate move time, round to 2 decimal places
     MoveTimes.append(round(time.time() - start_time, 2))
-    print("Move time:", MoveTimes[-1])
+    # print("Move time:", MoveTimes[-1])
     # print(MoveTimes)
     return action
 
