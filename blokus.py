@@ -17,7 +17,7 @@ import numpy as np
 # change to adjust the cutoff depth for alphabeta search
 Depth = 2
 # change to adjust the number of successor states returned
-MovesToConsider = 2
+MovesToConsider = 1
 # change to adjust the number of games played
 Games = 2
 
@@ -491,6 +491,34 @@ def Random_Player(player, game):
             options.remove(piece); # remove it from the options
     return None; # no possible move left
 
+# Largest Strategy: play a random available move for the largest piece possible
+# NOTE: this random choice thing might be helpful for implementing intelligent selection?
+def Largest_Player(player, game):
+    # pieces are already in order from largest to smallest
+    # iterate through and make the first possible move
+    for p in player.pieces:
+        possibles = player.possible_moves([p], game)
+        if len(possibles) != 0: # if there is possible moves
+            return random.choice(possibles);
+    # if no possible moves are found, return None
+    return None
+
+    # options = [p for p in player.pieces];
+
+    # # the array should be sorted
+    # # itrate thru and check for a possible move on a piece-by-piece basis
+    # # if found, return it
+    # # if that finishes, return none
+
+    # while len(options) > 0: # if there are still possible moves
+    #     piece = random.choice(options);
+    #     possibles = player.possible_moves([piece], game);
+    #     if len(possibles) != 0: # if there is possible moves
+    #         return random.choice(possibles);
+    #     else: # no possible move for that piece
+    #         options.remove(piece); # remove it from the options
+    # return None; # no possible move left
+
 # AI Strategy: choose a move based on utility
 def AI_Player(player, game):
     start_time = time.time()
@@ -695,6 +723,7 @@ def multi_run(repeat, one, two):
         clearGUI()
         TotalMoveTimes.append(MoveTimes)
 
+    # comment out everything below this if only using non-AI players
     # these are used to calculate stats across all games
     averages = []
     averages_after_two = []
@@ -771,7 +800,7 @@ def multi_run(repeat, one, two):
 
 def main():
     # multi_run(1, Random_Player, Random_Player);
-    multi_run(Games, Random_Player, AI_Player);
+    multi_run(Games, Largest_Player, AI_Player);
     # TODO(blokusUI) You need to change this a lot. The player needs to have
     # some sort of while loop here controlling their play. I'd
     # recommend printing out their available pieces, their available corners
