@@ -54,6 +54,10 @@ def render(board):
                 pygame.draw.rect(screen,(0, 0, 255), (x, y, 60, 60), 0)
             elif(board[i][j] == 2):
                 pygame.draw.rect(screen, (0, 255, 0), (x, y, 60, 60), 0)
+            elif(board[i][j] == 3):
+                pygame.draw.rect(screen, (255,255,0), (x, y, 60, 60), 0)
+            else:
+                pygame.draw.rect(screen, (255,105,180), (x, y, 60, 60), 0)              
             x += 60
         y += 60    
     
