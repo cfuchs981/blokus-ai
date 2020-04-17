@@ -763,7 +763,7 @@ def multi_run(repeat, one, two):
     #     if possible != 0 and estimate != 0:
     #         errors.append(abs(possible - estimate)/possible)
 
-    if len(TotalMoveTimes) > 1:
+    if len(TotalMoveTimes) > 0:
         # print each individual game's stats
         print("\n========================= TIME ANALYSIS =========================")
         for game in TotalMoveTimes:
