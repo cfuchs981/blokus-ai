@@ -17,9 +17,9 @@ import numpy as np
 # change to adjust the cutoff depth for alphabeta search
 Depth = 2
 # change to adjust the number of successor states returned
-MovesToConsider = 1
+MovesToConsider = 2
 # change to adjust the number of games played
-Games = 2
+Games = 10
 
 # used for alphabeta search
 count = 0
