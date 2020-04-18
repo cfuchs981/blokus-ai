@@ -35,8 +35,9 @@ TotalStartingPieces = 21
 MoveTimes = []
 Outcomes = []
 Scores = []
-PossibleCounts = []
-EstimatedCounts = []
+# PossibleCounts = []
+# EstimatedCounts = []
+PossibleEstimatePairs = []
 
 # Blokus Board
 class Board:
@@ -415,8 +416,9 @@ class Blokus:
             if not opponent.is_blocked:
                 # print("calculating blocking")
                 current_possibles = current.possible_count(current.pieces, state.game)
-                PossibleCounts.append(current_possibles)
-                EstimatedCounts.append(len(current.corners) * len(current.pieces))
+                # PossibleCounts.append(current_possibles)
+                # EstimatedCounts.append(len(current.corners) * len(current.pieces))
+                PossibleEstimatePairs.append((current_possibles, (len(current.corners) * len(current.pieces))))
                 # print("# of current possibles: ", current_possibles)
                 # print("estimated current possibles: ", (len(current.corners) * piece_count))
                 # print("is opponent blocked? ", opponent.is_blocked)
@@ -428,8 +430,9 @@ class Blokus:
                 # subtract a point for every possible move our opponent has
                 # print("pre-opponent total: ", total)
                 opponent_possibles = opponent.possible_count(opponent.pieces, state.game)
-                PossibleCounts.append(opponent_possibles)
-                EstimatedCounts.append(len(opponent.corners) * len(opponent.pieces))
+                # PossibleCounts.append(opponent_possibles)
+                # EstimatedCounts.append(len(opponent.corners) * len(opponent.pieces))
+                PossibleEstimatePairs.append((opponent_possibles, (len(opponent.corners) * len(opponent.pieces))))
                 # print("# of opponent possibles: ", opponent_possibles)
                 # print("estimated opponent possibles: ", (len(opponent.corners) * len(opponent.pieces)))
                 total -= opponent_possibles
@@ -735,11 +738,17 @@ def multi_run(repeat, one, two):
         -1: "L"
     }
     errors = []
+    estimate_pairs = []
     # zip the possibles and estimates to get an array of % errors
-    for possible, estimate in zip(PossibleCounts, EstimatedCounts):
-        # don't divide by zero
-        if possible != 0 and estimate != 0:
-            errors.append(abs(possible - estimate)/possible)
+    # for possible, estimate in zip(PossibleCounts, EstimatedCounts):
+    #     # don't divide by zero
+        # estimate_pairs.append((possible, estimate))
+        # if possible != 0 and estimate != 0:
+        #     errors.append(abs(possible - estimate)/possible)
+    for pair in PossibleEstimatePairs:
+        estimate_pairs.append((pair[0], pair[1]))
+        if pair[0] != 0 and pair[1] != 0:
+            errors.append(abs(pair[0] - pair[1])/pair[0])
 
     if len(TotalMoveTimes) > 0:
         # print each individual game's stats
@@ -797,6 +806,10 @@ def multi_run(repeat, one, two):
     print("Average Estimate Error:   " + str(round(np.mean(errors), 4)) + "%")
     print("Largest Estimate Error:  " + str(round(np.amax(errors), 4)) + "%")
     print("Smallest Estimate Error:  " + str(round(np.amin(errors), 4)) + "%\n")
+
+    # print("Estimate Pairs:")
+    # print(estimate_pairs)
+    # print(errors)
 
 def main():
     # multi_run(1, Random_Player, Random_Player);
