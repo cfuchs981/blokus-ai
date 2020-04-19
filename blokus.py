@@ -15,11 +15,11 @@ import numpy as np
 
 # PERFORMANCE PARAMETERS: edit these to play with AI performance
 # change to adjust the cutoff depth for alphabeta search
-Depth = 1
+Depth = 2
 # change to adjust the number of successor states returned
-MovesToConsider = 1
+MovesToConsider = 2
 # change to adjust the number of games played
-Games = 3
+Games = 10
 
 # used for alphabeta search
 count = 0
@@ -158,6 +158,8 @@ class Player:
         for cr in self.corners:
             # Check every available pieces
             for sh in pieces:
+                # print("size:", sh.size)
+                # test_count = 0
                 # Check every reference point the piece could have.
                 for num in range(sh.size):
                     # Check every flip
@@ -172,8 +174,10 @@ class Player:
                             # If the placement is valid and new
                             if game.valid_move(self, candidate.points):
                                 if not set(candidate.points) in visited:
+                                    # test_count += 1
                                     placements.append(candidate);
                                     visited.append(set(candidate.points));
+                # print("test_count", test_count)
         return placements;
 
     # return the number of all possible placements
@@ -376,7 +380,8 @@ class Blokus:
         return not state.to_move.plausible_moves(state.to_move.pieces, state.game, 1)
 
     # gets called in ab search on new states
-    def utility(self, state, turn_number):
+    def utility(self, state, actual_turn_number):
+        # print("starting utility")
         # this is hard-coded and bad. I'm doing it anyways
         # get current player
         ai_player = state.p2
@@ -395,78 +400,122 @@ class Blokus:
         # skip blocking and endgame calculations on first two moves
 
         # if we're past the first two moves
-        if turn_number > 2:
+        if actual_turn_number > 2:
+            # print("past first two moves")
+            # turn number in this successor state is calculated by taking 21 - number of pieces + 1 (offset)
+            # print("GETTING AI ESTIMATE")
+            ai_piece_count = len(ai_player.pieces)
+            ai_turn_number = (TotalStartingPieces - ai_piece_count + 1)
+            # determine how many possible moves we have
+            ai_player_possibles = ai_player.possible_count(ai_player.pieces, state.game)
+            # data for estimation stats
+            ai_player_data = {
+                "turn": ai_turn_number,
+                "possibles": ai_player_possibles,
+                "corners": len(ai_player.corners),
+                "pieces": len(ai_player.pieces),
+                "player": ai_player.id
+            }
+            EstimateData.append(ai_player_data)
+
+            # add a point for every possible move we have
+            total += ai_player_possibles
+
             # if opponent has possible moves
             if not opponent.is_blocked:
-                # determine how many possible moves we have
-                ai_player_possibles = ai_player.possible_count(ai_player.pieces, state.game)
-                # data for estimation stats
-                ai_player_data = {
-                    "turn": turn_number,
-                    "possibles": ai_player_possibles,
-                    "corners": len(ai_player.corners),
-                    "pieces": len(ai_player.pieces)
-                }
-                EstimateData.append(ai_player_data)
-
-                # add a point for every possible move we have
-                total += ai_player_possibles
+                # print("opponent not blocked")
+                # print("GETTING OPPONENT ESTIMATE")
+                # turn number in this successor state is calculated by taking 21 - number of pieces + 1 (offset)
+                opponent_piece_count = len(opponent.pieces)
+                opponent_turn_number = (TotalStartingPieces - opponent_piece_count + 1)
 
                 # determine how many possible moves opponent has
                 opponent_possibles = opponent.possible_count(opponent.pieces, state.game)
                 # data for estimation stats
                 opponent_data = {
-                    "turn": turn_number,
+                    "turn": opponent_turn_number,
                     "possibles": opponent_possibles,
                     "corners": len(opponent.corners),
-                    "pieces": len(opponent.pieces)
+                    "pieces": len(opponent.pieces),
+                    "player": opponent.id
                 }
                 EstimateData.append(opponent_data)
 
                 # subtract a point for every possible move our opponent has
                 total -= opponent_possibles
-                ai_piece_count = len(ai_player.pieces)
-                # skip endgame calculations if more than 1 piece
-                if ai_piece_count > 1:
-                    return total
-                # if the monomino is the last one, add 500 bonus points
-                elif ai_piece_count == 1:
-                    if ai_player.pieces[0].size == 1:
-                        total += 500
-                # if no pieces are left, add 1500 bonus points
-                elif ai_piece_count == 0:
-                    # HEY NOTE tone down these values if we use possible_count and not estimates
-                    total += 1500
-
-            # if opponent is completely blocked, don't subtract their possibles
+            # TODO get rid of this else clause, only for collection of data
+            # collect opponent data in case opponent is blockeds
             else:
-                # incentivize moves that give us more possibilities
-                ai_player_possibles = ai_player.possible_count(ai_player.pieces, state.game)
-                # data for estimation stats
-                ai_player_data = {
-                    "turn": turn_number,
-                    "possibles": ai_player_possibles,
-                    "corners": len(ai_player.corners),
-                    "pieces": len(ai_player.pieces)
-                }
-                EstimateData.append(ai_player_data)
+                # print("opponent blocked")
+                # turn number in this successor state is calculated by taking 21 - number of pieces + 1 (offset)
+                # print("GETTING OPPONENT ESTIMATE")
+                opponent_piece_count = len(opponent.pieces)
+                opponent_turn_number = (TotalStartingPieces - opponent_piece_count + 1)
 
-                # add a point for every possible move we have
-                # print("possible moves: ", current_possibles)
-                total += ai_player_possibles
-                
-                ai_piece_count = len(ai_player.pieces)
-                # skip endgame calculations if more than 1 piece
-                if ai_piece_count > 1:
-                    return total
-                # if the monomino is the last one, add 500 bonus points
-                elif ai_piece_count == 1:
-                    if ai_player.pieces[0].size == 1:
-                        total += 500
-                # if no pieces are left, add 1500 bonus points
-                elif ai_piece_count == 0:
-                    # NOTE tone down these values if we use possible_count and not estimates
-                    total += 1500
+                # determine how many possible moves opponent has
+                opponent_possibles = opponent.possible_count(opponent.pieces, state.game)
+                # data for estimation stats
+                opponent_data = {
+                    "turn": opponent_turn_number,
+                    "possibles": opponent_possibles,
+                    "corners": len(opponent.corners),
+                    "pieces": len(opponent.pieces),
+                    "player": opponent.id
+                }
+                EstimateData.append(opponent_data)
+            # skip endgame calculations if more than 1 piece
+            if ai_piece_count > 1:
+                # print("no endgame, more than one piece")
+                # print("returning utility\n")
+                return total
+            # if the monomino is the last one, add 500 bonus points
+            elif ai_piece_count == 1:
+                # print("one piece left")
+                if ai_player.pieces[0].size == 1:
+                    # print("it's the monomino")
+                    total += 500
+            # if no pieces are left, add 1500 bonus points
+            elif ai_piece_count == 0:
+                # print("no pieces left")
+                # NOTE tone down these values if we use possible_count and not estimates
+                total += 1500
+        # TODO get rid of this else clause, only for collection of data
+        # collect data for both players on first two moves
+        else:
+            # print("not past first two moves")
+            # DON'T MESS WITH TOTAL
+            # turn number in this successor state is calculated by taking 21 - number of pieces + 1 (offset)
+            # print("GETTING AI ESTIMATE")
+            ai_piece_count = len(ai_player.pieces)
+            ai_turn_number = (TotalStartingPieces - ai_piece_count + 1)
+            # determine how many possible moves we have
+            ai_player_possibles = ai_player.possible_count(ai_player.pieces, state.game)
+            # data for estimation stats
+            ai_player_data = {
+                "turn": ai_turn_number,
+                "possibles": ai_player_possibles,
+                "corners": len(ai_player.corners),
+                "pieces": len(ai_player.pieces),
+                "player": ai_player.id
+            }
+            EstimateData.append(ai_player_data)
+            # turn number in this successor state is calculated by taking 21 - number of pieces + 1 (offset)
+            # print("GETTING OPPONENT ESTIMATE")
+            opponent_piece_count = len(opponent.pieces)
+            opponent_turn_number = (TotalStartingPieces - opponent_piece_count + 1)
+
+            # determine how many possible moves opponent has
+            opponent_possibles = opponent.possible_count(opponent.pieces, state.game)
+            # data for estimation stats
+            opponent_data = {
+                "turn": opponent_turn_number,
+                "possibles": opponent_possibles,
+                "corners": len(opponent.corners),
+                "pieces": len(opponent.pieces),
+                "player": opponent.id
+            }
+            EstimateData.append(opponent_data)
+        # print("returning utility\n")
         return total
 
 # Random Strategy: choose an available piece randomly
@@ -735,9 +784,65 @@ def multi_run(repeat, one, two):
     print("Largest Estimate Error:  " + str(round(np.amax(errors), 4)) + "%")
     print("Smallest Estimate Error:  " + str(round(np.amin(errors), 4)) + "%\n")
 
-    print("EstimateData:")
-    for data in EstimateData:
-        print(data)
+    # print("EstimateData:")
+    SortedEstimateData = sorted(EstimateData, key=lambda k: k['turn'])
+    # for data in SortedEstimateData:
+    #     print(data)
+
+    AIEstimatesByTurn = []
+    OpponentEstimatesByTurn = []
+    smallest_turn = SortedEstimateData[0]["turn"]
+    largest_turn = SortedEstimateData[-1]["turn"]
+
+    for i in range(smallest_turn, (largest_turn + 1)):
+        possibles = []
+        corners = []
+        pieces = 0
+        estimate = {}
+        for data in SortedEstimateData:
+            if data["turn"] == i and data["player"] == 2:
+                possibles.append(data["possibles"])
+                corners.append(data["corners"])
+                pieces = data["pieces"]
+            elif data["turn"] > i:
+                break
+        estimate = {
+            "turn": i,
+            "average possibles": round(np.mean(possibles), 2),
+            "average corners": round(np.mean(corners), 2),
+            "pieces": pieces
+        }
+        AIEstimatesByTurn.append(estimate)
+    
+    for i in range(smallest_turn, (largest_turn + 1)):
+        possibles = []
+        corners = []
+        pieces = 0
+        estimate = {}
+        for data in SortedEstimateData:
+            if data["turn"] == i and data["player"] == 1:
+                possibles.append(data["possibles"])
+                corners.append(data["corners"])
+                pieces = data["pieces"]
+            elif data["turn"] > i:
+                break
+        estimate = {
+            "turn": i,
+            "average possibles": round(np.mean(possibles), 2),
+            "average corners": round(np.mean(corners), 2),
+            "pieces": pieces
+        }
+        OpponentEstimatesByTurn.append(estimate)
+
+    print("AI (P2) Estimate Data")
+    for estimate in AIEstimatesByTurn:
+        print(estimate)
+
+    print("\nOpponent (P1) Estimate Data")
+    for estimate in OpponentEstimatesByTurn:
+        print(estimate)
+
+    
     # print("Estimate Pairs:")
     # print(estimate_pairs)
     # print("errors")
@@ -745,7 +850,7 @@ def multi_run(repeat, one, two):
 
 def main():
     # multi_run(1, Random_Player, Random_Player);
-    multi_run(Games, Largest_Player, AI_Player);
+    multi_run(Games, Random_Player, AI_Player);
     # TODO(blokusUI) You need to change this a lot. The player needs to have
     # some sort of while loop here controlling their play. I'd
     # recommend printing out their available pieces, their available corners
