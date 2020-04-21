@@ -17,7 +17,7 @@ import numpy as np
 # change to adjust the cutoff depth for alphabeta search
 Depth = 2
 # change to adjust the number of successor states returned
-MovesToConsider = 2
+MovesToConsider = 3
 # change to adjust the number of games played
 Games = 10
 
@@ -589,24 +589,26 @@ class Blokus:
             # print("GETTING AI ESTIMATE")
             ai_piece_count = len(ai_player.pieces)
             ai_turn_number = (TotalStartingPieces - ai_piece_count + 1)
-            # determine how many possible moves we have
-            ai_player_possibles = ai_player.possible_count(ai_player.pieces, state.game)
+            ai_corners = len(ai_player.corners)
+            # ai_player_possibles = ai_player.possible_count(ai_player.pieces, state.game)
+
+            # estimate how many possible moves we have
             ai_estimate = 0
             # print("\nSTARTING AI ESTIMATE")
             for piece in ai_player.pieces:
                 # print(piece.id, "uniques:", piece.uniques)
                 # print("corners:", len(ai_player.corners))
                 # print("useless:", AIUseless[piece.id])
-                estimate = int(piece.uniques * (len(ai_player.corners) - AIUseless[piece.id]) * ((len(ai_player.corners) - AIUseless[piece.id]) / len(ai_player.corners)))
+                estimate = int(piece.uniques * (ai_corners - AIUseless[piece.id]) * ((ai_corners - AIUseless[piece.id]) / ai_corners))
                 # print("PIECE ESTIMATE:", estimate)
                 ai_estimate += estimate
             # print("\nPOSSIBLES:", ai_player_possibles)
             # print("TOTAL AI ESTIMATE:", ai_estimate, "\n")
-            ActualEstimatePairs.append([ai_player_possibles, ai_estimate])
+            # ActualEstimatePairs.append([ai_player_possibles, ai_estimate])
 
 
             # add a point for every possible move we have
-            total += ai_player_possibles
+            total += ai_estimate
 
             # if opponent has possible moves
             if not opponent.is_blocked:
@@ -615,24 +617,25 @@ class Blokus:
                 # turn number in this successor state is calculated by taking 21 - number of pieces + 1 (offset)
                 opponent_piece_count = len(opponent.pieces)
                 opponent_turn_number = (TotalStartingPieces - opponent_piece_count + 1)
+                opponent_corners = len(opponent.corners)
 
-                # determine how many possible moves opponent has
-                opponent_possibles = opponent.possible_count(opponent.pieces, state.game)
+                # opponent_possibles = opponent.possible_count(opponent.pieces, state.game)
+                # estimate how many possible moves opponent has
                 opponent_estimate = 0
                 # print("\nSTARTING OPPONENT ESTIMATE")
                 for piece in opponent.pieces:
                     # print(piece.id, "uniques:", piece.uniques)
                     # print("corners:", len(opponent.corners))
                     # print("useless:", OpponentUseless[piece.id])
-                    estimate = int(piece.uniques * (len(opponent.corners) - OpponentUseless[piece.id]) * ((len(opponent.corners) - OpponentUseless[piece.id]) / len(opponent.corners)))
+                    estimate = int(piece.uniques * (opponent_corners - OpponentUseless[piece.id]) * ((opponent_corners - OpponentUseless[piece.id]) / opponent_corners))
                     # print("PIECE ESTIMATE:", estimate)
                     opponent_estimate += estimate
                 # print("\nPOSSIBLES:", opponent_possibles)
                 # print("TOTAL OPPONENT ESTIMATE:", opponent_estimate, "\n")
-                ActualEstimatePairs.append([opponent_possibles, opponent_estimate])
+                # ActualEstimatePairs.append([opponent_possibles, opponent_estimate])
 
                 # subtract a point for every possible move our opponent has
-                total -= opponent_possibles
+                total -= opponent_estimate
             # skip endgame calculations if more than 1 piece
             if ai_piece_count > 1:
                 # print("no endgame, more than one piece")
@@ -913,9 +916,9 @@ def multi_run(repeat, one, two):
     print("Fastest Move:      ", np.amin(fastests))
     print("  Average Fastest: ", round(np.mean(fastests), 2), "\n")
 
-    print("Average Estimate Error:   " + str(round(np.mean(errors), 4)) + "%")
-    print("Largest Estimate Error:  " + str(round(np.amax(errors), 4)) + "%")
-    print("Smallest Estimate Error:  " + str(round(np.amin(errors), 4)) + "%\n")
+    # print("Average Estimate Error:   " + str(round(np.mean(errors), 4)) + "%")
+    # print("Largest Estimate Error:  " + str(round(np.amax(errors), 4)) + "%")
+    # print("Smallest Estimate Error:  " + str(round(np.amin(errors), 4)) + "%\n")
 
     # # print("EstimateData:")
     # SortedEstimateData = sorted(EstimateData, key=lambda k: k['turn'])
