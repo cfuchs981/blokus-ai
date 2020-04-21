@@ -79,6 +79,7 @@ class Pole(Piece):
         '''
         self.id = 'Pole';
         self.size = 1;
+        self.uniques = 1;
 
     def set_points(self, x, y):
         self.points = [(x, y)];
@@ -95,6 +96,7 @@ class Pole2(Piece):
         '''
         self.id = 'Pole2';
         self.size = 2;
+        self.uniques = 2;
 
     def set_points(self, x, y):
         self.points = [(x, y), (x, y + 1)];
@@ -113,6 +115,7 @@ class Pole3(Piece):
         '''
         self.id = 'Pole3';
         self.size = 3;
+        self.uniques = 2;
 
     def set_points(self, x, y):
         self.points = [(x, y), (x, y + 1), (x, y + 2)];
@@ -132,6 +135,7 @@ class Pole4(Piece):
         '''
         self.id = 'Pole4';
         self.size = 4;
+        self.uniques = 2;
 
     def set_points(self, x, y):
         self.points = [(x, y), (x, y + 1), (x, y + 2), (x, y + 3)];
@@ -152,6 +156,7 @@ class Pole5(Piece):
         '''
         self.id = 'Pole5';
         self.size = 5;
+        self.uniques = 2;
 
     def set_points(self, x, y):
         self.points = [(x, y), (x, y + 1), (x, y + 2), (x, y + 3), (x, y + 4)];
@@ -169,6 +174,7 @@ class TinyCorner(Piece):
         '''
         self.id = 'TinyCorner';
         self.size = 3;
+        self.uniques = 5;
 
     def set_points(self, x, y):
         self.points = [(x, y), (x, y + 1), (x + 1, y)];
@@ -187,6 +193,7 @@ class ShortCorner(Piece):
         '''
         self.id = 'ShortCorner';
         self.size = 4;
+        self.uniques = 10;
 
     def set_points(self, x, y):
         self.points = [(x, y), (x, y + 1), (x, y + 2), (x + 1, y)];
@@ -204,6 +211,7 @@ class Stair(Piece):
         '''
         self.id = 'Stair';
         self.size = 4;
+        self.uniques = 6;
 
     def set_points(self, x, y):
         self.points = [(x, y), (x, y + 1), (x + 1, y + 1), (x -1, y)];
@@ -221,6 +229,7 @@ class Box(Piece):
         '''
         self.id = 'Box';
         self.size = 4;
+        self.uniques = 1;
 
     def set_points(self, x, y):
         self.points = [(x, y), (x, y + 1), (x + 1, y + 1), (x + 1, y)];
@@ -238,6 +247,8 @@ class LongLedge(Piece):
         '''
         self.id = 'LongLedge';
         self.size = 5;
+        self.uniques = 10;
+        
 
     def set_points(self, x, y):
         self.points = [(x, y), (x, y + 1), (x + 1, y), (x + 2, y), (x + 3, y)];
@@ -256,6 +267,7 @@ class BigHurdle(Piece):
         '''
         self.id = 'BigHurdle';
         self.size = 5;
+        self.uniques = 6;
 
     def set_points(self, x, y):
         self.points= [(x, y), (x, y + 1), (x, y + 2), (x -1, y), (x + 1, y)];
@@ -274,6 +286,7 @@ class Corner(Piece):
         '''
         self.id = 'Corner';
         self.size = 5;
+        self.uniques = 5;
 
     def set_points(self, x, y):
         self.points = [(x, y), (x, y + 1), (x, y + 2), (x + 1, y), (x + 2, y)];
@@ -291,6 +304,7 @@ class LongStair(Piece):
         '''
         self.id = 'LongStair';
         self.size = 5;
+        self.uniques = 12;
 
     def set_points(self, x, y):
         self.points = [(x, y), (x + 1, y), (x + 2, y), (x, y -1), (x -1, y -1)];
@@ -309,6 +323,7 @@ class Ledge(Piece):
         '''
         self.id = 'Ledge';
         self.size = 5;
+        self.uniques = 6;
 
     def set_points(self, x, y):
         self.points = [(x, y), (x + 1, y), (x + 1, y + 1), (x -1, y),
@@ -327,6 +342,7 @@ class Hurdle(Piece):
     def __init__(self):
         self.id = 'Hurdle';
         self.size = 4;
+        self.uniques = 6;
 
     def set_points(self, x, y):
         self.points = [(x, y), (x, y + 1), (x + 1, y), (x -1, y)];
@@ -345,6 +361,7 @@ class Fist(Piece):
         '''
         self.id = 'Fist';
         self.size = 5;
+        self.uniques = 10;
 
     def set_points(self, x, y):
         self.points = [(x, y), (x + 1, y), (x + 1, y -1), (x, y -1), (x, y -2)];
@@ -363,6 +380,7 @@ class Zigzag(Piece):
         '''
         self.id = 'Zigzag';
         self.size = 5;
+        self.uniques = 14;
 
     def set_points(self, x, y):
         self.points = [(x, y), (x, y + 1), (x + 1, y + 1),
@@ -382,6 +400,7 @@ class Bucket(Piece):
         '''
         self.id = 'Bucket';
         self.size = 5;
+        self.uniques = 5;
 
     def set_points(self, x, y):
         self.points= [(x, y), (x, y + 1), (x + 1, y + 1), (x, y -1),
@@ -401,6 +420,7 @@ class Tree(Piece):
         '''
         self.id = 'Tree';
         self.size = 5;
+        self.uniques = 14;
 
     def set_points(self, x, y):
         self.points = [(x, y), (x, y + 1), (x + 1, y + 1), (x, y -1),
@@ -420,6 +440,7 @@ class Cross(Piece):
         '''
         self.id = 'cross';
         self.size = 5;
+        self.uniques = 2;
 
     def set_points(self, x, y):
         self.points = [(x,y), (x, y+1), (x+1, y), (x-1, y), (x, y-1)];
@@ -438,6 +459,7 @@ class Signpost(Piece):
         '''
         self.id = 'signpost';
         self.size = 5;
+        self.uniques = 12;
 
     def set_points(self, x, y):
         self.points = [(x, y), (x, y+1), (x+1, y), (x+2, y), (x-1, y)];

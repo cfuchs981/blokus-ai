@@ -36,6 +36,53 @@ MoveTimes = []
 Outcomes = []
 Scores = []
 EstimateData = []
+ActualEstimatePairs = []
+AIUseless = {
+    'signpost': 0,
+    'Pole5': 0,
+    'LongLedge': 0,
+    'BigHurdle': 0,
+    'Corner': 0,
+    'LongStair': 0,
+    'Ledge': 0,
+    'Fist': 0,
+    'Zigzag': 0,
+    'Bucket': 0,
+    'Tree': 0,
+    'cross': 0,
+    'Pole4': 0,
+    'ShortCorner': 0,
+    'Stair': 0,
+    'Box': 0,
+    'Hurdle': 0,
+    'Pole3': 0,
+    'TinyCorner': 0,
+    'Pole2': 0,
+    'Pole': 0
+}
+OpponentUseless = {
+    'signpost': 0,
+    'Pole5': 0,
+    'LongLedge': 0,
+    'BigHurdle': 0,
+    'Corner': 0,
+    'LongStair': 0,
+    'Ledge': 0,
+    'Fist': 0,
+    'Zigzag': 0,
+    'Bucket': 0,
+    'Tree': 0,
+    'cross': 0,
+    'Pole4': 0,
+    'ShortCorner': 0,
+    'Stair': 0,
+    'Box': 0,
+    'Hurdle': 0,
+    'Pole3': 0,
+    'TinyCorner': 0,
+    'Pole2': 0,
+    'Pole': 0
+}
 
 # Blokus Board
 class Board:
@@ -158,8 +205,6 @@ class Player:
         for cr in self.corners:
             # Check every available pieces
             for sh in pieces:
-                # print("size:", sh.size)
-                # test_count = 0
                 # Check every reference point the piece could have.
                 for num in range(sh.size):
                     # Check every flip
@@ -174,11 +219,141 @@ class Player:
                             # If the placement is valid and new
                             if game.valid_move(self, candidate.points):
                                 if not set(candidate.points) in visited:
-                                    # test_count += 1
                                     placements.append(candidate);
                                     visited.append(set(candidate.points));
-                # print("test_count", test_count)
         return placements;
+
+    # Get a unique list of all possible placements
+    # NOTE: this takes a while to run
+    def possible_moves_winner(self, pieces, game, pid):
+        global AIUseless
+        global OpponentUseless
+        # if this is being called for opponent
+        if pid == 1:
+            # print("called for opponent with ", pieces)
+            OpponentUseless = {
+                'signpost': 0,
+                'Pole5': 0,
+                'LongLedge': 0,
+                'BigHurdle': 0,
+                'Corner': 0,
+                'LongStair': 0,
+                'Ledge': 0,
+                'Fist': 0,
+                'Zigzag': 0,
+                'Bucket': 0,
+                'Tree': 0,
+                'cross': 0,
+                'Pole4': 0,
+                'ShortCorner': 0,
+                'Stair': 0,
+                'Box': 0,
+                'Hurdle': 0,
+                'Pole3': 0,
+                'TinyCorner': 0,
+                'Pole2': 0,
+                'Pole': 0
+            }
+            # Updates the corners of the player, in case the
+            # corners have been covered by another player's pieces.
+            self.corners = set([(x, y) for(x, y) in self.corners
+                                if game.board.state[y][x] == '_']);
+
+            placements = [] # a list of possible placements
+            visited = [] # a list placements (a set of points on board)
+
+            # Check every available corners
+            for cr in self.corners:
+                # Check every available pieces
+                for sh in pieces:
+                    corner_is_useless = True
+                    # print("size:", sh.size)
+                    # test_count = 0
+                    # Check every reference point the piece could have.
+                    for num in range(sh.size):
+                        # Check every flip
+                        for flip in ["h", "v"]:
+                            # Check every rotation
+                            for rot in [0, 90, 180, 270]:
+                                # Create a copy to prevent an overwrite on the original
+                                candidate = copy.deepcopy(sh);
+                                candidate.create(num, cr);
+                                candidate.flip(flip);
+                                candidate.rotate(rot);
+                                # If the placement is valid and new
+                                if game.valid_move(self, candidate.points):
+                                    if not set(candidate.points) in visited:
+                                        corner_is_useless = False
+                                        placements.append(candidate);
+                                        visited.append(set(candidate.points));
+                    # print("Opponent ", sh.id, ":", corner_is_useless)
+                    if corner_is_useless:
+                        OpponentUseless[sh.id] += 1
+            # print("\nOpponentUseless:", OpponentUseless, "\n")
+            return placements;
+        # if this is being called for AI player
+        elif pid == 2:
+            # print("called for AI with ", pieces)
+            AIUseless = {
+                'signpost': 0,
+                'Pole5': 0,
+                'LongLedge': 0,
+                'BigHurdle': 0,
+                'Corner': 0,
+                'LongStair': 0,
+                'Ledge': 0,
+                'Fist': 0,
+                'Zigzag': 0,
+                'Bucket': 0,
+                'Tree': 0,
+                'cross': 0,
+                'Pole4': 0,
+                'ShortCorner': 0,
+                'Stair': 0,
+                'Box': 0,
+                'Hurdle': 0,
+                'Pole3': 0,
+                'TinyCorner': 0,
+                'Pole2': 0,
+                'Pole': 0
+            }
+            # Updates the corners of the player, in case the
+            # corners have been covered by another player's pieces.
+            self.corners = set([(x, y) for(x, y) in self.corners
+                                if game.board.state[y][x] == '_']);
+
+            placements = [] # a list of possible placements
+            visited = [] # a list placements (a set of points on board)
+
+            # Check every available corners
+            for cr in self.corners:
+                # Check every available pieces
+                for sh in pieces:
+                    corner_is_useless = True
+                    # print("size:", sh.size)
+                    # test_count = 0
+                    # Check every reference point the piece could have.
+                    for num in range(sh.size):
+                        # Check every flip
+                        for flip in ["h", "v"]:
+                            # Check every rotation
+                            for rot in [0, 90, 180, 270]:
+                                # Create a copy to prevent an overwrite on the original
+                                candidate = copy.deepcopy(sh);
+                                candidate.create(num, cr);
+                                candidate.flip(flip);
+                                candidate.rotate(rot);
+                                # If the placement is valid and new
+                                if game.valid_move(self, candidate.points):
+                                    if not set(candidate.points) in visited:
+                                        corner_is_useless = False
+                                        placements.append(candidate);
+                                        visited.append(set(candidate.points));
+                    # print("AI ", sh.id, ":", corner_is_useless)
+                    if corner_is_useless:
+                        AIUseless[sh.id] += 1
+            # print("\nAIUseless:", AIUseless, "\n")
+            return placements;
 
     # return the number of all possible placements
     def possible_count(self, pieces, game):
@@ -211,7 +386,7 @@ class Player:
         return counter;
 
     # Get a list of up to cutoff plausible placements
-    def plausible_moves(self, pieces, game, cutoff):
+    def plausible_moves(self, pieces, game, cutoff, pid):
         # why not just use possible_moves on individual pieces?
         placements = []
         for piece in pieces:
@@ -250,22 +425,25 @@ class Blokus:
     def winner(self):
         moves = []
         for p in self.players:
-            possibles = p.possible_count(p.pieces, self)
-            if possibles == 0:
+            # need an if statement in here to differentiate players
+            # may need to add a new param "id" to possible_moves
+            # print("CALLING FROM WINNER FOR PLAYER", p.id)
+            possibles = p.possible_moves_winner(p.pieces, self, p.id)
+            if len(possibles) == 0:
                 p.is_blocked = True
             moves.append(possibles)
 
         # check how many rounds the total available moves from all players
         # are the same and increment the counter if so
-        if self.previous == sum([mv for mv in moves]):
+        if self.previous == sum([len(mv) for mv in moves]):
             self.repeat += 1;
         else:
             self.repeat = 0;
 
         # if there are still moves possible or total available moves remain
         # static for too many rounds (repeat reaches over a certain threshold)
-        if False in[mv == 0 for mv in moves] and self.repeat < 4:
-            self.previous = sum([mv for mv in moves]);
+        if False in[len(mv) == 0 for mv in moves] and self.repeat < 4:
+            self.previous = sum([len(mv) for mv in moves]);
             return None; # Nothing to return to continue the game
         else: # No more move available, the game ends
             # order the players by highest score first
@@ -371,21 +549,26 @@ class Blokus:
         "Return a list of legal (move, state) pairs."
         # find and return up to MovesToConsider possible moves as successors
         m = [(move, self.make_move(move, state))
-                for move in state.to_move.plausible_moves(state.to_move.pieces, state.game, MovesToConsider)]
+                for move in state.to_move.plausible_moves(state.to_move.pieces, state.game, MovesToConsider, state.to_move.id)]
         return m
 
     def terminal_test(self, state):
         "Return True if this is a final state for the game."
         # if we have no moves left, it's apparently (effectively) a final state
-        return not state.to_move.plausible_moves(state.to_move.pieces, state.game, 1)
+        return not state.to_move.plausible_moves(state.to_move.pieces, state.game, 1, state.to_move.id)
 
     # gets called in ab search on new states
     def utility(self, state, actual_turn_number):
+        # print("\nUTILITY AIUseless:", AIUseless, "\n")
+        # print("\nUTILITY OpponentUseless:", OpponentUseless, "\n")
         # print("starting utility")
         # this is hard-coded and bad. I'm doing it anyways
         # get current player
         ai_player = state.p2
         opponent = state.p1
+        
+        # print("CURRENT AI CORNERS:", len(ai_player.corners))
+        # print("CURRENT OPPONENT CORNERS:", len(opponent.corners))
 
         # start total at 89
         total = TotalStartingSize
@@ -408,15 +591,19 @@ class Blokus:
             ai_turn_number = (TotalStartingPieces - ai_piece_count + 1)
             # determine how many possible moves we have
             ai_player_possibles = ai_player.possible_count(ai_player.pieces, state.game)
-            # data for estimation stats
-            ai_player_data = {
-                "turn": ai_turn_number,
-                "possibles": ai_player_possibles,
-                "corners": len(ai_player.corners),
-                "pieces": len(ai_player.pieces),
-                "player": ai_player.id
-            }
-            EstimateData.append(ai_player_data)
+            ai_estimate = 0
+            # print("\nSTARTING AI ESTIMATE")
+            for piece in ai_player.pieces:
+                # print(piece.id, "uniques:", piece.uniques)
+                # print("corners:", len(ai_player.corners))
+                # print("useless:", AIUseless[piece.id])
+                estimate = int(piece.uniques * (len(ai_player.corners) - AIUseless[piece.id]) * ((len(ai_player.corners) - AIUseless[piece.id]) / len(ai_player.corners)))
+                # print("PIECE ESTIMATE:", estimate)
+                ai_estimate += estimate
+            # print("\nPOSSIBLES:", ai_player_possibles)
+            # print("TOTAL AI ESTIMATE:", ai_estimate, "\n")
+            ActualEstimatePairs.append([ai_player_possibles, ai_estimate])
+
 
             # add a point for every possible move we have
             total += ai_player_possibles
@@ -431,38 +618,21 @@ class Blokus:
 
                 # determine how many possible moves opponent has
                 opponent_possibles = opponent.possible_count(opponent.pieces, state.game)
-                # data for estimation stats
-                opponent_data = {
-                    "turn": opponent_turn_number,
-                    "possibles": opponent_possibles,
-                    "corners": len(opponent.corners),
-                    "pieces": len(opponent.pieces),
-                    "player": opponent.id
-                }
-                EstimateData.append(opponent_data)
+                opponent_estimate = 0
+                # print("\nSTARTING OPPONENT ESTIMATE")
+                for piece in opponent.pieces:
+                    # print(piece.id, "uniques:", piece.uniques)
+                    # print("corners:", len(opponent.corners))
+                    # print("useless:", OpponentUseless[piece.id])
+                    estimate = int(piece.uniques * (len(opponent.corners) - OpponentUseless[piece.id]) * ((len(opponent.corners) - OpponentUseless[piece.id]) / len(opponent.corners)))
+                    # print("PIECE ESTIMATE:", estimate)
+                    opponent_estimate += estimate
+                # print("\nPOSSIBLES:", opponent_possibles)
+                # print("TOTAL OPPONENT ESTIMATE:", opponent_estimate, "\n")
+                ActualEstimatePairs.append([opponent_possibles, opponent_estimate])
 
                 # subtract a point for every possible move our opponent has
                 total -= opponent_possibles
-            # TODO get rid of this else clause, only for collection of data
-            # collect opponent data in case opponent is blockeds
-            else:
-                # print("opponent blocked")
-                # turn number in this successor state is calculated by taking 21 - number of pieces + 1 (offset)
-                # print("GETTING OPPONENT ESTIMATE")
-                opponent_piece_count = len(opponent.pieces)
-                opponent_turn_number = (TotalStartingPieces - opponent_piece_count + 1)
-
-                # determine how many possible moves opponent has
-                opponent_possibles = opponent.possible_count(opponent.pieces, state.game)
-                # data for estimation stats
-                opponent_data = {
-                    "turn": opponent_turn_number,
-                    "possibles": opponent_possibles,
-                    "corners": len(opponent.corners),
-                    "pieces": len(opponent.pieces),
-                    "player": opponent.id
-                }
-                EstimateData.append(opponent_data)
             # skip endgame calculations if more than 1 piece
             if ai_piece_count > 1:
                 # print("no endgame, more than one piece")
@@ -479,42 +649,6 @@ class Blokus:
                 # print("no pieces left")
                 # NOTE tone down these values if we use possible_count and not estimates
                 total += 1500
-        # TODO get rid of this else clause, only for collection of data
-        # collect data for both players on first two moves
-        else:
-            # print("not past first two moves")
-            # DON'T MESS WITH TOTAL
-            # turn number in this successor state is calculated by taking 21 - number of pieces + 1 (offset)
-            # print("GETTING AI ESTIMATE")
-            ai_piece_count = len(ai_player.pieces)
-            ai_turn_number = (TotalStartingPieces - ai_piece_count + 1)
-            # determine how many possible moves we have
-            ai_player_possibles = ai_player.possible_count(ai_player.pieces, state.game)
-            # data for estimation stats
-            ai_player_data = {
-                "turn": ai_turn_number,
-                "possibles": ai_player_possibles,
-                "corners": len(ai_player.corners),
-                "pieces": len(ai_player.pieces),
-                "player": ai_player.id
-            }
-            EstimateData.append(ai_player_data)
-            # turn number in this successor state is calculated by taking 21 - number of pieces + 1 (offset)
-            # print("GETTING OPPONENT ESTIMATE")
-            opponent_piece_count = len(opponent.pieces)
-            opponent_turn_number = (TotalStartingPieces - opponent_piece_count + 1)
-
-            # determine how many possible moves opponent has
-            opponent_possibles = opponent.possible_count(opponent.pieces, state.game)
-            # data for estimation stats
-            opponent_data = {
-                "turn": opponent_turn_number,
-                "possibles": opponent_possibles,
-                "corners": len(opponent.corners),
-                "pieces": len(opponent.pieces),
-                "player": opponent.id
-            }
-            EstimateData.append(opponent_data)
         # print("returning utility\n")
         return total
 
@@ -544,11 +678,12 @@ def Largest_Player(player, game):
 
 # AI Strategy: choose a move based on utility
 def AI_Player(player, game):
+    # print("\nAIUseless IN AIPLAYER:", AIUseless, "\n")
     start_time = time.time()
     # determine what turn we're on
     turn_number = (TotalStartingPieces - len(player.pieces) + 1)
     # if no possible moves in this state, return None
-    if not player.plausible_moves(player.pieces, game, 1):
+    if not player.plausible_moves(player.pieces, game, 1, player.id):
         # print("WE'RE OUTTA MOVES")
         return None; # no possible move left
     # copy current game info into a BoardState to be used within ab search
@@ -631,6 +766,8 @@ def alphabeta_search(state, d=1, cutoff_test=None, eval_fn=None, start_time=None
     # Body of alphabeta_search starts here:
     cutoff_test = (cutoff_test or
                    (lambda state,depth: depth>d or state.game.terminal_test(state)))
+    # print("\nAB SEARCH AIuseless:", AIUseless, "\n")
+    # print("\nAB SEARCH OpponentUseless:", OpponentUseless, "\n")
     eval_fn = eval_fn or (lambda state: state.game.utility(state, turn_number))
     action, state = argmax(state.game.successors(state),
                            # lambda ((a, s)): right_value(s, -BigInitialValue, BigInitialValue, 0))
@@ -717,15 +854,11 @@ def multi_run(repeat, one, two):
         -1: "L"
     }
     errors = []
-    estimate_pairs = []
 
-    # use this loop to try different estimate functions
-    for data in EstimateData:
-        # corners * pieces
-        estimate = data["corners"] * data["pieces"]
-        estimate_pairs.append((data["possibles"], estimate))
-        if data["possibles"] != 0 and estimate != 0:
-            errors.append(abs(data["possibles"] - estimate)/data["possibles"])
+    # calculate errors
+    for pair in ActualEstimatePairs:
+        if pair[0] != 0:
+            errors.append((abs(pair[0] - pair[1])/pair[0]) * 100)
 
     if len(TotalMoveTimes) > 0:
         # print each individual game's stats
@@ -784,63 +917,63 @@ def multi_run(repeat, one, two):
     print("Largest Estimate Error:  " + str(round(np.amax(errors), 4)) + "%")
     print("Smallest Estimate Error:  " + str(round(np.amin(errors), 4)) + "%\n")
 
-    # print("EstimateData:")
-    SortedEstimateData = sorted(EstimateData, key=lambda k: k['turn'])
-    # for data in SortedEstimateData:
-    #     print(data)
+    # # print("EstimateData:")
+    # SortedEstimateData = sorted(EstimateData, key=lambda k: k['turn'])
+    # # for data in SortedEstimateData:
+    # #     print(data)
 
-    AIEstimatesByTurn = []
-    OpponentEstimatesByTurn = []
-    smallest_turn = SortedEstimateData[0]["turn"]
-    largest_turn = SortedEstimateData[-1]["turn"]
+    # AIEstimatesByTurn = []
+    # OpponentEstimatesByTurn = []
+    # smallest_turn = SortedEstimateData[0]["turn"]
+    # largest_turn = SortedEstimateData[-1]["turn"]
 
-    for i in range(smallest_turn, (largest_turn + 1)):
-        possibles = []
-        corners = []
-        pieces = 0
-        estimate = {}
-        for data in SortedEstimateData:
-            if data["turn"] == i and data["player"] == 2:
-                possibles.append(data["possibles"])
-                corners.append(data["corners"])
-                pieces = data["pieces"]
-            elif data["turn"] > i:
-                break
-        estimate = {
-            "turn": i,
-            "average possibles": round(np.mean(possibles), 2),
-            "average corners": round(np.mean(corners), 2),
-            "pieces": pieces
-        }
-        AIEstimatesByTurn.append(estimate)
+    # for i in range(smallest_turn, (largest_turn + 1)):
+    #     possibles = []
+    #     corners = []
+    #     pieces = 0
+    #     estimate = {}
+    #     for data in SortedEstimateData:
+    #         if data["turn"] == i and data["player"] == 2:
+    #             possibles.append(data["possibles"])
+    #             corners.append(data["corners"])
+    #             pieces = data["pieces"]
+    #         elif data["turn"] > i:
+    #             break
+    #     estimate = {
+    #         "turn": i,
+    #         "average possibles": round(np.mean(possibles), 2),
+    #         "average corners": round(np.mean(corners), 2),
+    #         "pieces": pieces
+    #     }
+    #     AIEstimatesByTurn.append(estimate)
     
-    for i in range(smallest_turn, (largest_turn + 1)):
-        possibles = []
-        corners = []
-        pieces = 0
-        estimate = {}
-        for data in SortedEstimateData:
-            if data["turn"] == i and data["player"] == 1:
-                possibles.append(data["possibles"])
-                corners.append(data["corners"])
-                pieces = data["pieces"]
-            elif data["turn"] > i:
-                break
-        estimate = {
-            "turn": i,
-            "average possibles": round(np.mean(possibles), 2),
-            "average corners": round(np.mean(corners), 2),
-            "pieces": pieces
-        }
-        OpponentEstimatesByTurn.append(estimate)
+    # for i in range(smallest_turn, (largest_turn + 1)):
+    #     possibles = []
+    #     corners = []
+    #     pieces = 0
+    #     estimate = {}
+    #     for data in SortedEstimateData:
+    #         if data["turn"] == i and data["player"] == 1:
+    #             possibles.append(data["possibles"])
+    #             corners.append(data["corners"])
+    #             pieces = data["pieces"]
+    #         elif data["turn"] > i:
+    #             break
+    #     estimate = {
+    #         "turn": i,
+    #         "average possibles": round(np.mean(possibles), 2),
+    #         "average corners": round(np.mean(corners), 2),
+    #         "pieces": pieces
+    #     }
+    #     OpponentEstimatesByTurn.append(estimate)
 
-    print("AI (P2) Estimate Data")
-    for estimate in AIEstimatesByTurn:
-        print(estimate)
+    # print("AI (P2) Estimate Data")
+    # for estimate in AIEstimatesByTurn:
+    #     print(estimate)
 
-    print("\nOpponent (P1) Estimate Data")
-    for estimate in OpponentEstimatesByTurn:
-        print(estimate)
+    # print("\nOpponent (P1) Estimate Data")
+    # for estimate in OpponentEstimatesByTurn:
+    #     print(estimate)
 
     
     # print("Estimate Pairs:")
@@ -850,7 +983,7 @@ def multi_run(repeat, one, two):
 
 def main():
     # multi_run(1, Random_Player, Random_Player);
-    multi_run(Games, Random_Player, AI_Player);
+    multi_run(Games, Largest_Player, AI_Player);
     # TODO(blokusUI) You need to change this a lot. The player needs to have
     # some sort of while loop here controlling their play. I'd
     # recommend printing out their available pieces, their available corners
