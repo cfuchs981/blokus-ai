@@ -79,7 +79,7 @@ class Pole(Piece):
         '''
         self.id = 'Pole';
         self.size = 1;
-        self.uniques = 1;
+        self.uniques = 1; # number of unique transformations per piece
 
     def set_points(self, x, y):
         self.points = [(x, y)];
