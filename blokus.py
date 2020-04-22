@@ -17,7 +17,7 @@ import numpy as np
 # change to adjust the cutoff depth for alphabeta search
 Depth = 2
 # change to adjust the number of successor states returned
-MovesToConsider = 5
+MovesToConsider = 3
 # change to adjust the number of games played
 Games = 10
 
@@ -622,7 +622,7 @@ class Blokus:
         # print("MTC:", MovesToConsider)
         m = [(move, self.make_move(move, state))
                 for move in state.to_move.plausible_moves(state.to_move.pieces, state.game, MovesToConsider)]
-        print("moves_returned:", len(m))
+        # print("moves_returned:", len(m))
         # print(m)
         return m
 
@@ -759,6 +759,40 @@ def AI_Player(player, game):
     start_time = time.time()
     # determine what turn we're on
     turn_number = (TotalStartingPieces - len(player.pieces) + 1)
+
+    # the mighty Barasona
+    if turn_number == 1:
+        tree = piece.Tree()
+        tree.points = [(12, 12), (12, 13), (13, 13), (12, 11), (11, 12)]
+        tree.corners = [(13, 10), (14, 12), (14, 14), (11, 14), (10, 13), (10, 11), (11, 10)]
+        tree.pts_map = [(0, 0), (0, 1), (1, 1), (0, -1), (-1, 0)]
+        tree.refpt = (13, 13)
+        return tree
+    elif turn_number == 2:
+        cross = piece.Cross()
+        cross.points = [(10, 10), (11, 10), (10, 11), (10, 9), (9, 10)]
+        cross.corners = [(8, 11), (9, 12), (11, 12), (12, 11), (12, 9), (11, 8), (9, 8), (8, 9)]
+        cross.pts_map = [(0, 0), (0, 1), (1, 0), (-1, 0), (0, -1)]
+        cross.refpt = (11, 10)
+        return cross
+    # include valid move checks for the next two moves
+    elif turn_number == 3:
+        zigzag = piece.Zigzag()
+        zigzag.points = [(8, 8), (8, 9), (7, 9), (9, 8), (9, 7)]
+        zigzag.corners = [(7, 7), (6, 8), (6, 10), (9, 10), (10, 9), (10, 6), (8, 6)]
+        zigzag.pts_map = [(0, 0), (0, 1), (1, 1), (-1, 0), (-1, -1)]
+        zigzag.refpt = (8, 9)
+        if game.valid_move(player, zigzag.points):
+            return zigzag
+    elif turn_number == 4:
+        signpost = piece.Signpost()
+        signpost.points = [(7, 6), (7, 7), (6, 6), (5, 6), (8, 6)]
+        signpost.corners = [(4, 5), (4, 7), (6, 8), (8, 8), (9, 7), (9, 5)]
+        signpost.pts_map = [(0, 0), (0, 1), (1, 0), (2, 0), (-1, 0)]
+        signpost.refpt = (7, 7)
+        if game.valid_move(player, signpost.points):
+            return signpost
+
     # if no possible moves in this state, return None
     if not player.plausible_moves(player.pieces, game, 1):
         # print("WE'RE OUTTA MOVES")
