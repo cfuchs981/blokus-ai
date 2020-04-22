@@ -17,7 +17,7 @@ import numpy as np
 # change to adjust the cutoff depth for alphabeta search
 Depth = 2
 # change to adjust the number of successor states returned
-MovesToConsider = 3
+MovesToConsider = 5
 # change to adjust the number of games played
 Games = 10
 
@@ -385,24 +385,95 @@ class Player:
                                     visited.append(set(sh.points));
         return counter;
 
+    # # Get a list of up to cutoff plausible placements
+    # def plausible_moves(self, pieces, game, cutoff, pid):
+    #     # why not just use possible_moves on individual pieces?
+    #     placements = []
+    #     for piece in pieces:
+    #         possibles = self.possible_moves([piece], game)
+    #         # print(" Possibles: ", possibles)
+    #         # print(possibles != [])
+    #         if possibles != []:
+    #             for possible in possibles:
+    #                 placements.append(possible)
+    #                 if len(placements) == cutoff:
+    #                     # MARKER uncomment this to see pieces
+    #                     # print("cutoff reached! returning ", placements)
+    #                     return placements
+    #     # MARKER uncomment this to see pieces
+    #     # print("cutoff NOT reached! returning ", placements)
+    #     return placements
+
     # Get a list of up to cutoff plausible placements
-    def plausible_moves(self, pieces, game, cutoff, pid):
-        # why not just use possible_moves on individual pieces?
-        placements = []
-        for piece in pieces:
-            possibles = self.possible_moves([piece], game)
-            # print(" Possibles: ", possibles)
-            # print(possibles != [])
-            if possibles != []:
-                for possible in possibles:
-                    placements.append(possible)
-                    if len(placements) == cutoff:
-                        # MARKER uncomment this to see pieces
-                        # print("cutoff reached! returning ", placements)
-                        return placements
-        # MARKER uncomment this to see pieces
-        # print("cutoff NOT reached! returning ", placements)
-        return placements
+    def plausible_moves(self, pieces, game, cutoff):
+        # print("cutoff:", cutoff)
+        # Updates the corners of the player, in case the
+        # corners have been covered by another player's pieces.
+        self.corners = set([(x, y) for(x, y) in self.corners
+                            if game.board.state[y][x] == '_']);
+
+        placements = [] # a list of possible placements
+        visited = [] # a list placements (a set of points on board)
+
+        piece_size = 5
+        size_group_limit = 2
+        counter = 0
+        # check by piece instead of by corner
+        # Check every available corners
+        for sh in pieces:
+            piece_considered = False
+            # print("size:", sh.size)
+            # print("size class:", piece_size)
+            if sh.size <= piece_size:
+                # print("checking piece", sh.id)
+                # Check every available pieces
+                for cr in self.corners:
+                    # Check every reference point the piece could have.
+                    for num in range(sh.size):
+                        # Check every flip
+                        for flip in ["h", "v"]:
+                            # Check every rotation
+                            for rot in [0, 90, 180, 270]:
+                                # Create a copy to prevent an overwrite on the original
+                                candidate = copy.deepcopy(sh);
+                                candidate.create(num, cr);
+                                candidate.flip(flip);
+                                candidate.rotate(rot);
+                                # If the placement is valid and new
+                                if game.valid_move(self, candidate.points):
+                                    if not set(candidate.points) in visited:
+                                        counter += 1
+                                        placements.append(candidate);
+                                        # print("added", sh.id, " to placements")
+                                        # print("counter:", counter)
+                                        # print("limit:", size_group_limit)
+                                        # if at cutoff, return
+                                        if len(placements) == cutoff:
+                                            # print("found", len(placements), ", returning")
+                                            return placements
+                                        visited.append(set(candidate.points));
+                                        # otherwise, check if we have enough for this size
+                                        if counter == size_group_limit:
+                                            # move to a lower size tier
+                                            piece_size -= 1
+                                            # reset the counter
+                                            counter = 0
+                                        # break back and try a new piece
+                                        piece_considered = True
+                                        # print("innermost breazk")
+                                        break
+                            if piece_considered:
+                                # print("breaking from flip")
+                                break
+                        if piece_considered:
+                            # print("breaking from num")
+                            break
+                    if piece_considered:
+                        # print("breaking from cr")
+                        break
+            # I think we just loop back
+        # print("returning down below")
+        return placements;
 
     # Get the next move based off of the player's strategy
     def next_move(self, game):
@@ -548,14 +619,17 @@ class Blokus:
     def successors(self, state):
         "Return a list of legal (move, state) pairs."
         # find and return up to MovesToConsider possible moves as successors
+        # print("MTC:", MovesToConsider)
         m = [(move, self.make_move(move, state))
-                for move in state.to_move.plausible_moves(state.to_move.pieces, state.game, MovesToConsider, state.to_move.id)]
+                for move in state.to_move.plausible_moves(state.to_move.pieces, state.game, MovesToConsider)]
+        print("moves_returned:", len(m))
+        # print(m)
         return m
 
     def terminal_test(self, state):
         "Return True if this is a final state for the game."
         # if we have no moves left, it's apparently (effectively) a final state
-        return not state.to_move.plausible_moves(state.to_move.pieces, state.game, 1, state.to_move.id)
+        return not state.to_move.plausible_moves(state.to_move.pieces, state.game, 1)
 
     # gets called in ab search on new states
     def utility(self, state, actual_turn_number):
@@ -686,7 +760,7 @@ def AI_Player(player, game):
     # determine what turn we're on
     turn_number = (TotalStartingPieces - len(player.pieces) + 1)
     # if no possible moves in this state, return None
-    if not player.plausible_moves(player.pieces, game, 1, player.id):
+    if not player.plausible_moves(player.pieces, game, 1):
         # print("WE'RE OUTTA MOVES")
         return None; # no possible move left
     # copy current game info into a BoardState to be used within ab search
