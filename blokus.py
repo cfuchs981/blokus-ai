@@ -20,7 +20,7 @@ MovesToConsider = 4
 # change to adjust the number of games played (defualt 10)
 Games = 10
 
-# used for alphabeta search
+# taken from mancala.py, used for alphabeta search
 count = 0
 testing = 0
 BigInitialValue = 1000000
@@ -199,6 +199,7 @@ class Player:
                                     visited.append(set(candidate.points));
         return placements;
 
+    # Tyler - AI implementation
     # variant of possible_moves used when calling from winner
     # this updates global dicts of useless corner counts for each piece
     def possible_moves_winner(self, pieces, game, pid):
@@ -302,6 +303,7 @@ class Player:
                         AIUseless[sh.id] += 1
             return placements;
 
+    # Tyler - AI implementation
     # return the number of all possible placements
     # used when the actual objects aren't needed, faster than possible_moves
     def possible_count(self, pieces, game):
@@ -333,6 +335,7 @@ class Player:
                                     visited.append(set(sh.points));
         return counter;
 
+    # Tyler - AI implementation
     # Get a list of up to cutoff plausible placements
     # faster than calculating all possible_moves and then selecting a few
     def plausible_moves(self, pieces, game, cutoff, pid):
@@ -367,6 +370,7 @@ class Blokus:
     def winner(self):
         # calculate possible moves for both players
         moves = []
+        # Tyler - AI implementation (following loop)
         for p in self.players:
             possibles = p.possible_moves_winner(p.pieces, self, p.id)
             # update flag if a player is completely blocked
@@ -467,6 +471,7 @@ class Blokus:
                 Outcomes.append(0)
                 print('Game over! Tied between players: '+ ', '.join(map(str, winner)));
 
+    # Tyler - AI implementation, abstract method from mancala.py ab search
     def make_move(self, move, state):
         "Return a new BoardState reflecting move made from given board state."
         # make a copy of the given state to be updated
@@ -485,6 +490,7 @@ class Blokus:
         newboard.to_move = newboard.game.players[0]
         return newboard
 
+    # Tyler - AI implementation, abstract method from mancala.py ab search
     def successors(self, state):
         "Return a list of legal (move, state) pairs."
         # find and return up to MovesToConsider possible moves as successors
@@ -492,11 +498,13 @@ class Blokus:
                 for move in state.to_move.plausible_moves(state.to_move.pieces, state.game, MovesToConsider, state.to_move.id)]
         return m
 
+    # Tyler - AI implementation, abstract method from mancala.py ab search
     def terminal_test(self, state):
         "Return True if this is a final state for the game."
         # if we have no moves left, it's effectively a final state
         return not state.to_move.plausible_moves(state.to_move.pieces, state.game, 1, state.to_move.id)
 
+    # Tyler - AI implementation, abstract method from mancala.py ab search
     # gets called in ab search on new states
     def utility(self, state, actual_turn_number):
         ai_player = state.p2
@@ -569,6 +577,7 @@ def Random_Player(player, game):
             options.remove(piece); # remove it from the options
     return None; # no possible move left
 
+# Tyler - AI implementation, created a better opponent to test against
 # Largest Strategy: play a random available move for the largest piece possible
 def Largest_Player(player, game):
     # pieces are already in order from largest to smallest
@@ -580,6 +589,7 @@ def Largest_Player(player, game):
     # if no possible moves are found, return None
     return None
 
+# Tyler - AI implementation
 # AI Strategy: choose a move based on utility using alphabeta minimax search
 # named after Jeff Barasona, creator of the Barasona opening our AI uses
 def Jeffbot(player, game):
@@ -631,6 +641,7 @@ def Jeffbot(player, game):
     # perform alphabeta search and return a useful move
     return alphabeta_search(state, Depth, None, None, start_time, turn_number)
 
+# Tyler - AI implementation, taken from mancala.py
 def alphabeta_search(state, d=1, cutoff_test=None, eval_fn=None, start_time=None, turn_number=None):
     """Search game to determine best action; use alpha-beta pruning.
     This version cuts off search and uses an evaluation function."""
@@ -713,6 +724,7 @@ def alphabeta_search(state, d=1, cutoff_test=None, eval_fn=None, start_time=None
     MoveTimes.append(round(time.time() - start_time, 2))
     return action
 
+# Tyler - AI implementation, based off of BoardState from mancala.py
 class BoardState:
     """Holds one state of the Blokus board, used to generate successors."""
     def __init__(self, game=None):
@@ -722,13 +734,6 @@ class BoardState:
         # to_move keeps track of the player whose turn it is to move
         self.to_move = game.players[0]
         self._board = game.board
-
-'''
-TODO(AI): tyler
-The above snippet just plays a random piece. This is where you should implement
-whatever other AI strategies we want, and call them from main() instead of
-Random_Player.
-'''
 
 # Play a round of blokus (all players move), then print board.
 def play_blokus(blokus):
@@ -759,6 +764,7 @@ def multi_run(repeat, one, two):
         P1 = Player(1, one) # first player
         P2 = Player(2, two) # second player
         
+        # Tyler - AI implementation
         # add pieces in order from largest to smallest
         all_pieces = [piece.Signpost(), piece.Pole5(), piece.LongLedge(),
             piece.BigHurdle(), piece.Corner(), piece.LongStair(),
@@ -779,6 +785,7 @@ def multi_run(repeat, one, two):
         clearGUI()
         TotalMoveTimes.append(MoveTimes)
 
+    # Tyler - AI implementation, calculate stats to evaluate AI performance
     # used to calculate game stats
     averages = []
     averages_after_two = []
