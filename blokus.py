@@ -279,18 +279,15 @@ def play_blokus(blokus):
 
 
 # Run a blokus game with two players.
-# TODO(claire) might want to extend for 2-4 players.
-def multi_run(repeat, one, two, three, four):
+def multi_run(repeat, one, two):
     # Scores for each player
-    winner = {1: 0, 2: 0, 3: 0, 4: 0};
+    winner = {1: 0, 2: 0};
 
     # Play as many games as indicated by param repeat
     for i in range(repeat):
         order = []; # Reset
         P1 = Player(1, one) # first player
         P2 = Player(2, two) # second player
-        P3 = Player(3, three)
-        P4 = Player(4, four)
         
         all_pieces = [piece.Signpost(), piece.Pole(), piece.Pole2(), piece.Pole3(),
                       piece.Pole4(), piece.Pole5(), piece.TinyCorner(),
@@ -301,7 +298,7 @@ def multi_run(repeat, one, two, three, four):
                       piece.Tree(), piece.Cross()];
 
         board = Board(14, 14);
-        order = [P1, P2, P3, P4];
+        order = [P1, P2];
         blokus = Blokus(order, board, all_pieces);
         play_blokus(blokus);
 
@@ -316,7 +313,7 @@ def multi_run(repeat, one, two, three, four):
         clearGUI()
 
 def main():
-    multi_run(1, Random_Player, Random_Player, Random_Player, Random_Player);
+    multi_run(1, Random_Player, Random_Player);
     # TODO(blokusUI) You need to change this a lot. The player needs to have
     # some sort of while loop here controlling their play. I'd
     # recommend printing out their available pieces, their available corners
