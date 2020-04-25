@@ -1,5 +1,13 @@
-# Some functions are modified from the source listed in piece.py
-# (the functions that handle the Piece objects).
+# This file has functions modified from the blokus implementation at
+# https://digitalcommons.calpoly.edu/cgi/viewcontent.cgi?article=1305&context=cpesp
+# Those functions will be marked with a #DC (digital commons) comment. Functions
+# that were copied by modified will have a #DC-Claire comment.
+
+'''
+Blokus AI
+CS 480 Spring 2020
+Claire Fuchs, Senay Teclebrhan, Tyler Acosta, Andrew Flynn
+'''
 
 import sys
 import math
@@ -61,6 +69,7 @@ AIUseless = UselessInit
 OpponentUseless = UselessInit
 
 # Blokus Board
+# DC-Claire
 class Board:
     def __init__(self, nrow, ncol):
         self.nrow = nrow; # total rows
@@ -116,22 +125,9 @@ class Board:
 
         return True in corners;
 
-    
-    '''
-    # Print the current board layout
-    # TODO(UI) we don't want this. This is lazy testing UI, route it into
-    # something better & with colors. 
-    
-    def print_board(self):
-        print("Current Board Layout:");
-        for row in range(len(self.state)):
-            for col in range(len(self.state[0])):
-                print(" "+ str(self.state[row][col]), end = '')
-            print()
-    '''
-    
 
 # Player Class
+# DC-Claire
 class Player:
     def __init__(self, id, strategy):
         self.id = id # player's id
@@ -353,6 +349,7 @@ class Player:
         return self.strategy(self, game);
 
 # Blokus Game class
+# DC-Claire
 class Blokus:
     def __init__(self, players, board, all_pieces):
         self.players = players; 
@@ -565,6 +562,7 @@ class Blokus:
         return total
 
 # Random Strategy: choose an available piece randomly
+# DC
 def Random_Player(player, game):
     options = [p for p in player.pieces];
     while len(options) > 0: # if there are still possible moves
@@ -767,6 +765,7 @@ def play_blokus(blokus):
 
 
 # Run a blokus game with two players.
+# DC-Claire
 def multi_run(repeat, one, two):
     # Scores for each player
     winner = {1: 0, 2: 0};
@@ -863,16 +862,9 @@ def multi_run(repeat, one, two):
     print("  Average Fastest: ", round(np.mean(fastests), 2), "\n")
 
 def main():
-    # NOTE: Jeffbot allows the other (human) player to move first because he is polite (and hard-coded that way)
+    # NOTE: Jeffbot allows the other (human) player to move first because he
+    # is polite (and hard-coded that way)
     multi_run(Games, Largest_Player, Jeffbot);
-    # TODO(blokusUI) You need to change this a lot. The player needs to have
-    # some sort of while loop here controlling their play. I'd
-    # recommend printing out their available pieces, their available corners
-    # and just let them select from those arrays. Then you can reuse the print
-    # board logic.
-    # Actually, what I'd recommend is following the layout of Random_Player.
-    # Just do a lot of input prompts there and you only really need to let the
-    # player act when they're choosing their piece anyways.
 
 if __name__ == '__main__':
     main();
