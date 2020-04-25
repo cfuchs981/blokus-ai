@@ -1,5 +1,6 @@
 # This file was modified from the blokus implementation at
 # https://digitalcommons.calpoly.edu/cgi/viewcontent.cgi?article=1305&context=cpesp
+# Blokus Backend - Claire 
 
 import math
 
@@ -66,8 +67,7 @@ Define all 21 Blokus Pieces. The IDs are meant to help you think of what the sha
 like, and I tried my best, but I doubt they're actually helpful.
 
 Ultimately, this implementation is pretty slow compared to other blokus implementations I
-saw (using a bit board, or using a mix of 2D arrays), but it was more understandable to me
-so I prefer it. We're also not too worried about speed, so it's fine. 
+saw (using a bit board, or using a mix of 2D arrays), but it's more readable, so it's fine.
 '''
 class Pole(Piece):
     def __init__(self):
@@ -79,7 +79,7 @@ class Pole(Piece):
         '''
         self.id = 'Pole';
         self.size = 1;
-        self.uniques = 1; # number of unique transformations per piece
+        self.uniques = 1; # number of unique transformations per piece, for AI
 
     def set_points(self, x, y):
         self.points = [(x, y)];

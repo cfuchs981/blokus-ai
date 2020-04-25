@@ -6,6 +6,8 @@ https://lorenzod8n.wordpress.com/2007/05/27/pygame-tutorial-2-drawing-lines/
 https://realpython.com/pygame-a-primer/
 https://sites.cs.ucsb.edu/~pconrad/cs5nm/topics/pygame/drawing/
 
+Senay - GUI Implementation
+
 '''
 
 # Import the pygame module
@@ -57,7 +59,7 @@ def render(board):
             elif(board[i][j] == 3):
                 pygame.draw.rect(screen, (255,255,0), (x, y, 60, 60), 0)
             else:
-                pygame.draw.rect(screen, (255,105,180), (x, y, 60, 60), 0)              
+                pygame.draw.rect(screen, (255,255,255), (x, y, 60, 60), 0)              
             x += 60
         y += 60    
     
