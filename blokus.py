@@ -1,7 +1,6 @@
 # Some functions are modified from the source listed in piece.py
 # (the functions that handle the Piece objects).
 
-from utils import *
 import sys
 import math
 import random
@@ -18,7 +17,7 @@ Depth = 2
 # number of successor states returned (default 4)
 MovesToConsider = 4
 # change to adjust the number of games played (defualt 10)
-Games = 10
+Games = 1
 
 # taken from mancala.py, used for alphabeta search
 count = 0
@@ -713,6 +712,25 @@ def alphabeta_search(state, d=1, cutoff_test=None, eval_fn=None, start_time=None
         else:
             return min_value(s, -BigInitialValue, BigInitialValue, 0)
 
+    def argmin(seq, fn):
+        """Return an element with lowest fn(seq[i]) score; tie goes to first one.
+        >>> argmin(['one', 'to', 'three'], len)
+        'to'
+        """
+        best = seq[0]; best_score = fn(best)
+        for x in seq:
+            x_score = fn(x)
+            if x_score < best_score:
+                best, best_score = x, x_score
+        return best
+
+    def argmax(seq, fn):
+        """Return an element with highest fn(seq[i]) score; tie goes to first one.
+        >>> argmax(['one', 'to', 'three'], len)
+        'three'
+        """
+        return argmin(seq, lambda x: -fn(x))
+
     # Body of alphabeta_search starts here:
     cutoff_test = (cutoff_test or
                    (lambda state,depth: depth>d or state.game.terminal_test(state)))
@@ -812,7 +830,7 @@ def multi_run(repeat, one, two):
             print("Average Move Time: ", average)
             average_after_two = round(np.mean(game[2:]), 2)
             averages_after_two.append(average_after_two)
-            print("    After 2 Moves: ", average_after_two)
+            print("    After 2 Moves:   ", average_after_two)
             slowest = np.amax(game)
             slowests.append(slowest)
             print("Slowest Move:      ", slowest)
@@ -838,7 +856,7 @@ def multi_run(repeat, one, two):
     print("Lowest Score:     ", np.amin(Scores), "\n")
 
     print("Average Move Time: ", round(np.mean(averages), 2))
-    print("  After 2 Moves: ", round(np.mean(averages_after_two), 2))
+    print("  After 2 Moves:   ", round(np.mean(averages_after_two), 2))
     print("Slowest Move:      ", np.amax(slowests))
     print("  Average Slowest: ", round(np.mean(slowests), 2))
     print("Fastest Move:      ", np.amin(fastests))
