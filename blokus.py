@@ -581,7 +581,7 @@ def piece_prompt(options):
 
         # Get their choice. If they don't enter an integer, handle the exception
         try:
-            choice = int(raw_input("Choice: "));
+            choice = int(input("Choice: "));
         except:
             # Do nothing; choice = 0, so the user will be prompted again
             pass;
@@ -594,7 +594,7 @@ def piece_prompt(options):
             print("\nSelect one of the following options:");
 
         elif (choice == 2): # Request the user's piece
-            piece = raw_input("Choose a piece: ");
+            piece = input("Choose a piece: ");
             print("");
             if piece in option_names:  # If the piece name is valid, retrieve the piece object
                 if (len(options) == 21 and piece == "cross"): # They can't open with a cross
@@ -628,7 +628,7 @@ def placement_prompt(possibles):
 
         # See if the user enters an integer; if they don't, handle the exception
         try:
-            choice = int(raw_input("Choose a placement: "));
+            choice = int(input("Choose a placement: "));
         except:
             # Do nothing; if the user doesn't enter an integer, they will be prompted again
             pass;
