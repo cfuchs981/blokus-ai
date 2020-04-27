@@ -561,6 +561,79 @@ class Blokus:
                 total += 1500
         return total
 
+    # This function will prompt the user for their piece
+def piece_prompt(options):
+    # Create an array with the valid piece names
+    option_names = [str(x.id) for x in options];
+
+    # Prompt the user for their choice
+    print("\nIt's your turn! Select one of the following options:");
+    choice = 0;
+    
+    # While they haven't chosen a valid piece...
+    while (choice != 2):
+        print("     1 - See available pieces.");
+        print("     2 - Choose a piece.");
+
+        # Get their choice. If they don't enter an integer, handle the exception
+        try:
+            choice = int(input("Choice: "));
+        except:
+            # Do nothing; choice = 0, so the user will be prompted again
+            pass;
+
+        # Once they've entered a choice, perform the desired actions
+        print("");
+        if (choice == 1): # Print the available pieces
+            for x in option_names:
+                print(x);
+            print("\nSelect one of the following options:");
+
+        elif (choice == 2): # Request the user's piece
+            piece = input("Choose a piece: ");
+            print("");
+            if piece in option_names:  # If the piece name is valid, retrieve the piece object
+                if (len(options) == 21 and piece == "cross"): # They can't open with a cross
+                    print("INVALID PIECE (You can't open with a cross...). Please try again:");
+                    choice = 0;
+                else:
+                    i = option_names.index(piece);
+                    piece = options[i];
+            else:
+                print("INVALID PIECE. Please try again:");
+                choice = 0;
+
+        else: # If the user doesn't request the list of pieces or choose a piece
+            print("INVALID CHOICE. Please try again:");
+
+    # Once they've chosen a piece...
+    return piece;
+
+# This function will prompt the user for their placement
+def placement_prompt(possibles):
+    choice = -1; # An invalid "choice" to start the following loop
+
+    # While the user hasn't chosen a valid placment...
+    while (choice < 1 or choice > len(possibles)):
+        count = 1; # Used to index each placement; initialized to 1
+        # Prompt the user for their placement
+        print("Select one of the following placements:")
+        for x in possibles:
+            print("     " + str(count) + " - " + str(x.points));
+            count += 1;
+
+        # See if the user enters an integer; if they don't, handle the exception
+        try:
+            choice = int(input("Choose a placement: "));
+        except:
+            # Do nothing; if the user doesn't enter an integer, they will be prompted again
+            pass;
+        print("");
+
+    # Once they've made a valid placement...
+    placement = possibles[choice - 1];
+    return placement;    
+
 # Random Strategy: choose an available piece randomly
 # DC
 def Random_Player(player, game):
@@ -585,6 +658,18 @@ def Largest_Player(player, game):
             return random.choice(possibles);
     # if no possible moves are found, return None
     return None
+
+# Human Strategy: choose an available piece and placement based on user input
+def Human_Player(player, game):
+    options = [p for p in player.pieces];
+    while len(options) > 0: # if there are still possible moves
+        piece = piece_prompt(options);
+        possibles = player.possible_moves([piece], game);
+        if len(possibles) != 0: # if there is possible moves
+            return placement_prompt(possibles);
+        else: # no possible move for that piece
+            options.remove(piece); # remove it from the options
+    return None; # no possible move left
 
 # Tyler - AI implementation
 # AI Strategy: choose a move based on utility using alphabeta minimax search
@@ -864,7 +949,7 @@ def multi_run(repeat, one, two):
 def main():
     # NOTE: Jeffbot allows the other (human) player to move first because he
     # is polite (and hard-coded that way)
-    multi_run(Games, Largest_Player, Jeffbot);
+    multi_run(Games, Human_Player, Jeffbot);
 
 if __name__ == '__main__':
     main();
